@@ -107,12 +107,22 @@ class PdfCompressorProvider extends ChangeNotifier {
       _statusMessage = "Saving compressed file...";
       notifyListeners();
 
+      // Check if compressed file is actually larger than original
+      final Uint8List finalBytes;
+      if (compressedBytes.lengthInBytes >= _originalFileBytes!.lengthInBytes) {
+        finalBytes = _originalFileBytes!;
+        _statusMessage = "⚠️ Target file is too small or couldn't be compressed. Saving original.";
+        notifyListeners();
+      } else {
+        finalBytes = compressedBytes;
+      }
+
       final String? outputPath = await FilePicker.saveFile(
         dialogTitle: 'Select Save Location',
         fileName: 'Compressed_${DateTime.now().millisecondsSinceEpoch}.pdf',
         type: FileType.custom,
         allowedExtensions: ['pdf'],
-        bytes: compressedBytes,
+        bytes: finalBytes,
       );
 
       if (outputPath == null) {
@@ -123,9 +133,12 @@ class PdfCompressorProvider extends ChangeNotifier {
       }
 
       _isLoading = false;
-      final double finalSizeMB = compressedBytes.lengthInBytes / (1024 * 1024);
-      _statusMessage =
-          "✅ Success! Compressed Size: ${finalSizeMB.toStringAsFixed(2)} MB";
+      final double finalSizeMB = finalBytes.lengthInBytes / (1024 * 1024);
+      if (finalBytes == _originalFileBytes!) {
+        _statusMessage = "⚠️ Kept original file (Text may not be selectable). Size: ${finalSizeMB.toStringAsFixed(2)} MB";
+      } else {
+        _statusMessage = "✅ Success! Compressed Size: ${finalSizeMB.toStringAsFixed(2)} MB (Text may not be selectable)";
+      }
       notifyListeners();
 
       if (context.mounted) {

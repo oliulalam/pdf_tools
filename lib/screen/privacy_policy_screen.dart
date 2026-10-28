@@ -100,14 +100,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               "1. Information Collection and Use",
-              "PDF Quant: Editor & Manager is designed to work entirely offline. All file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, and PDF-to-Excel conversion — are performed locally on your device.\n\n"
+              "PDF Quant: Editor & Manager is designed to prioritize your privacy by processing your files locally on your device. All core file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, PDF-to-Excel conversion, and Document Scanning — are performed locally.\n\n"
                   "We do not upload your files or personal documents to any server. The information the app stores, entirely on your own device, includes:\n\n"
                   "• App settings (Light/Dark mode theme preferences) stored locally via 'shared_preferences'\n"
                   "• Recent Documents History: the names and file paths of PDFs you create or modify, stored locally so you can find them again in the app. This list never leaves your device and can be cleared at any time (see Section 12).\n"
                   "• Ad-related identifiers collected by Google AdMob (see Section 4)\n\n"
-                  "Text Recognition (OCR) / Machine Learning: To convert scanned PDFs into editable Word or Excel files, we use Google ML Kit Text Recognition. This Artificial Intelligence/Machine Learning process runs ENTIRELY OFFLINE on your local device. Your documents are NEVER sent to the cloud for text extraction.\n\n"
+                  "Document Scanner & Text Recognition (OCR): To convert physical documents to PDF and extract text for Word or Excel files, we use Google ML Kit Document Scanner and Text Recognition. These Machine Learning models run locally on your device. Your documents are NEVER sent to the cloud for text extraction.\n\n"
                   "Photo/Image Access: When you use the Image to PDF feature, the app uses 'image_picker' to let you select photos from your device gallery. These images are processed entirely on your device and are NEVER uploaded, transmitted, or stored by us.\n\n"
-                  "Document Printing: When you use the print feature, the app sends your document to your device's native print system. This data is handled by your system's print spooler or connected printer service — not by us.\n\n"
                   "We do NOT upload, transmit, or have remote access to:\n"
                   "• Your PDF file contents\n"
                   "• Contact details, email addresses, or phone numbers\n"
@@ -117,12 +116,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
             // ───── SECTION 2 ─────
             _buildSection(
               context,
-              "2. File Processing (Offline & Secure)",
-              "To ensure your privacy and security, all PDF operations — including merging, splitting, compressing, and conversions (Word/Excel/Images) — occur entirely locally on your mobile device. \n\n"
+              "2. File Processing (Secure On-Device Processing)",
+              "To ensure your privacy and security, all PDF operations — including merging, splitting, compressing, scanning, and conversions (Word/Excel/Images) — occur locally on your mobile device. \n\n"
                   "• NO CLOUD UPLOADS: Your files are NEVER uploaded to any remote server or third-party cloud service.\n"
-                  "• ON-DEVICE AI/OCR: Our optical character recognition (OCR) uses Google ML Kit which runs completely offline without sending any document data to Google servers.\n"
-                  "• NO DATA RETENTION: We do not store or keep copies of your documents on any server. Temporary files created during processing are automatically deleted as soon as the task is finished.\n"
-                  "• FULL PRIVACY: Since all processing is offline, we have absolutely no remote access to the content of your documents at any time.",
+                  "• ON-DEVICE AI/OCR: Our document scanning and optical character recognition (OCR) uses Google ML Kit which runs on your device without sending any document content to Google servers.\n"
+                  "• NO DATA RETENTION: We do not store or keep copies of your documents on any server. Temporary files created during processing should be cleared by your system automatically.\n"
+                  "• FULL PRIVACY: We have absolutely no remote access to the content of your documents at any time.",
             ),
 
             // ───── SECTION 3 ─────
@@ -132,7 +131,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "PDF Quant: Editor & Manager only requests permissions that are essential for its core functionality:\n\n"
                   "• File Selection & Storage: We use the system-managed file picker to allow you to select PDF files and images from your device for processing. This permission is used strictly to read the files you choose and to save the final results back to your device's storage. On older Android devices (API 29 and below), we may request 'WRITE_EXTERNAL_STORAGE' to ensure files can be saved correctly; this permission is not requested on modern Android versions.\n"
                   "• Image Selection: We use 'image_picker' for converting photos to PDF. These images are processed locally and are never transmitted beyond your device.\n"
-                  "• PDF Printing: We provide a printing service that allows you to preview and print your documents. Note that your document data may be passed through your system's print spooler or a third-party print application if configured on your device. We have no control over third-party print applications.\n"
+                  "• Camera Access: The app may request camera access through Google ML Kit Document Scanner for you to scan physical documents directly into PDF format.\n"
                   "• Internet Access & Advertising ID (AD_ID): Required for Google AdMob to display advertisements and for the UMP consent management platform. The Advertising ID can be reset or opted out of via Android Settings → Google → Ads.\n\n"
                   "Note: On Android 13+ devices, the app uses the official System Photo Picker, which ensures we do not have broad access to your media library — only to the specific photos you select. On older devices, we use the Storage Access Framework (SAF), which also restricts app access to only the files you explicitly pick.",
             ),
@@ -143,9 +142,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "4. Advertisements (Google AdMob)",
               "We use Google AdMob to display banner and interstitial advertisements. AdMob may collect certain data including:\n\n"
                   "• Device identifiers (e.g., Advertising ID / AD_ID)\n"
-                  "• IP address\n"
-                  "• Usage data for ad personalization\n\n"
-                  "We use Google's User Messaging Platform (UMP) to request your consent before displaying personalized ads, in compliance with GDPR and Google Play policies.\n\n"
+                  "• Coarse Location (estimated from IP address) for ad targeting\n"
+                  "• Usage data and crash logs for ad personalization and analytics\n\n"
+                  "We use Google's User Messaging Platform (UMP) to request your consent (where legally required) before displaying personalized ads.\n\n"
                   "For more information, see Google's Privacy Policy:\nhttps://policies.google.com/privacy",
             ),
 
@@ -208,7 +207,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   "• We do NOT sell or rent your personal information to any third party\n"
                   "• We do NOT upload or transmit your PDF file contents to any server (file names/paths are kept locally only, as described in Sections 1 and 8)\n"
                   "• We do NOT collect contact details, emails, or phone numbers\n"
-                  "• We do NOT collect location data\n"
+                  "• We do NOT collect location data beyond estimated location from IP address by AdMob\n"
                   "• We do NOT share data for advertising purposes beyond AdMob's own policy",
             ),
 
@@ -230,7 +229,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   "• Right to Deletion: You can use the 'Clear History' option in the Recent Documents / My Files screen to remove the local list of file names and paths at any time, or uninstall the app to delete all local app data.\n"
                   "• Right to Withdraw Consent: Change ad preference in app Settings\n"
                   "• Right to Opt-Out: Android Settings → Google → Ads → Opt out of Ads Personalization\n"
-                  "• Right to Object: Decline analytics or personalized ads at any time\n\n"
+                  "• Right to Object: Decline analytics data collection or personalized ads at any time via the consent form or device settings\n\n"
                   "California residents (CCPA): We do not sell your personal information.\n\n"
                   "To exercise your rights, contact us at the email below.",
             ),
@@ -278,7 +277,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Last Updated: July 2026",
+                    "Last Updated: October 2026",
                     style: TextStyle(color: theme.hintColor, fontSize: 12),
                   ),
                 ],

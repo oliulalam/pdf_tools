@@ -154,6 +154,11 @@ class PdfMergerProvider extends ChangeNotifier {
       debugPrint("Merge Error: $e");
       setMerging(false);
       setStatusMessage(null);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to merge PDFs: $e')),
+        );
+      }
       return false;
     }
   }

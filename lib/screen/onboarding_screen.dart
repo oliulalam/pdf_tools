@@ -20,7 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       "icon": "assets/images/logo.png",
     },
     {
-      "title": "100% Offline & Secure",
+      "title": "Private & Secure",
       "subtitle": "All processing happens locally on your device. We never upload your files to the cloud.",
       "icon": "secure", 
     },

@@ -34,6 +34,8 @@ class PdfToolKitApp extends StatefulWidget {
 class _PdfToolKitAppState extends State<PdfToolKitApp> {
   late StreamSubscription _intentDataStreamSubscription;
 
+  static String? _pendingSharedPdfPath;
+
   @override
   void initState() {
     super.initState();
@@ -47,29 +49,52 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
 
     // For sharing images/PDFs coming from outside the app while the app is closed
     ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
-      _handleSharedFiles(value);
+      _handleSharedFiles(value, isInitial: true);
     });
   }
 
-  void _handleSharedFiles(List<SharedMediaFile> files) {
+  void _handleSharedFiles(List<SharedMediaFile> files, {bool isInitial = false}) {
     if (files.isEmpty) return;
     
     // Check if the file is a PDF
     for (var file in files) {
       if (file.path.toLowerCase().endsWith('.pdf')) {
-        // Find top level navigator and push viewer
-        if (mounted) {
-           _navigatorKey.currentState?.push(
-             MaterialPageRoute(
-               builder: (_) => PdfViewerScreen(
-                 path: file.path,
-                 title: p.basename(file.path),
+        if (isInitial) {
+          // Store pending path to be handled after splash screen
+          _pendingSharedPdfPath = file.path;
+        } else {
+          // Find top level navigator and push viewer if app is already running
+          if (mounted) {
+             _navigatorKey.currentState?.push(
+               MaterialPageRoute(
+                 builder: (_) => PdfViewerScreen(
+                   path: file.path,
+                   title: p.basename(file.path),
+                 ),
                ),
-             ),
-           );
+             );
+          }
         }
         break; // Just open the first PDF for now
       }
+    }
+  }
+
+  static void checkAndOpenPendingSharedFile(BuildContext context) {
+    if (_pendingSharedPdfPath != null) {
+      final path = _pendingSharedPdfPath!;
+      _pendingSharedPdfPath = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PdfViewerScreen(
+              path: path,
+              title: p.basename(path),
+            ),
+          ),
+        );
+      });
     }
   }
 

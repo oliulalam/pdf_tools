@@ -68,6 +68,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+import 'package:pdf_toolkit/app.dart';
+
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
@@ -75,6 +77,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     AdHelper.loadInterstitialAd();
+    // Check if there is any pending shared PDF to open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PdfToolKitApp.checkAndOpenPendingSharedFile(context);
+    });
   }
 
   @override

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:pdf_toolkit/utils/review_helper.dart';
 
@@ -28,11 +27,41 @@ class AdHelper {
 
   static int _clickCount = 0;
   static DateTime? _lastAdTime;
-  static const int _adIntervalClicks = 1; // ১ম ক্লিক থেকেই চেক করবে
-  static const int _adIntervalSeconds = 60; // গুগলের পলিসি মেনে ১ মিনিটের গ্যাপ
+  // Adjusted as per Play Policy requirements for better UX
+  static const int _adIntervalClicks = 3; 
+  static const int _adIntervalSeconds = 120; // 2 minutes gap
+
+  static Future<void> initializeMobileAdsAndConsent() async {
+    final params = ConsentRequestParameters();
+    
+    ConsentInformation.instance.requestConsentInfoUpdate(
+      params,
+      () async {
+        if (await ConsentInformation.instance.isConsentFormAvailable()) {
+          ConsentForm.loadAndShowConsentFormIfRequired((FormError? error) {
+            _initializeAdsIfReady();
+          });
+        } else {
+          _initializeAdsIfReady();
+        }
+      },
+      (FormError error) {
+        debugPrint("Consent Error: ${error.message}");
+        _initializeAdsIfReady();
+      },
+    );
+  }
+
+  static Future<void> _initializeAdsIfReady() async {
+    final consentStatus = await ConsentInformation.instance.getConsentStatus();
+    if (consentStatus == ConsentStatus.obtained || consentStatus == ConsentStatus.notRequired) {
+      await MobileAds.instance.initialize();
+      loadInterstitialAd();
+    }
+  }
 
   static Future<void> preLoadAds() async {
-    debugPrint("AdHelper: Pre-loading Interstitial Ad in Splash...");
+    debugPrint("AdHelper: Pre-loading Interstitial Ad...");
     final completer = Completer<void>();
 
     // Attempt to load and wait for it

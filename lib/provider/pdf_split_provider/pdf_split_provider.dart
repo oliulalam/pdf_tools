@@ -192,16 +192,16 @@ class PdfSplitProvider extends ChangeNotifier {
       _isLoading = false;
       _setStatus('');
 
-      if (context.mounted) {
-        for (var file in _generatedFiles) {
-          context.read<FileHistoryProvider>().addFile(file);
-        }
-      }
       return true;
     } catch (e) {
       debugPrint("Split Error: $e");
       _isLoading = false;
       _setStatus('');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to split PDF: $e')),
+        );
+      }
       return false;
     }
   }
