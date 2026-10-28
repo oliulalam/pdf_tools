@@ -1,0 +1,20 @@
+{
+  "app_name": "পিডিএফ কোয়ান্ট",
+  "tools": "টুলস",
+  "my_files": "আমার ফাইল",
+  "settings": "সেটিংস",
+  "merge_pdf": "পিডিএফ যুক্ত করুন",
+  "split_pdf": "পিডিএফ ভাগ করুন",
+  "image_to_pdf": "ছবি থেকে পিডিএফ",
+  "pdf_to_image": "পিডিএফ থেকে ছবি",
+  "pdf_to_word": "পিডিএফ থেকে ওয়ার্ড",
+  "pdf_to_excel": "পিডিএফ থেকে এক্সেল",
+  "compress_pdf": "পিডিএফ সাইজ কমান",
+  "delete_pages": "পৃষ্ঠা মুছুন",
+  "pdf_presenter": "পিডিএফ প্রেজেন্টার",
+  "language": "ভাষা",
+  "lock_unlock": "পাসওয়ার্ড সেট/রিমুভ",
+  "organize_pages": "পেজ সাজান/ঘোরান",
+  "watermark": "জলছাপ ও পেজ নম্বর",
+  "scan_document": "স্ক্যান করুন"
+}

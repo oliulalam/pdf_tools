@@ -1,0 +1,20 @@
+{
+  "app_name": "PDF Quant",
+  "tools": "Tools",
+  "my_files": "My Files",
+  "settings": "Settings",
+  "merge_pdf": "Merge PDF",
+  "split_pdf": "Split PDF",
+  "image_to_pdf": "Image to PDF",
+  "pdf_to_image": "PDF to Image",
+  "pdf_to_word": "PDF to Word",
+  "pdf_to_excel": "PDF to Excel",
+  "compress_pdf": "Compress PDF",
+  "delete_pages": "Delete Pages",
+  "pdf_presenter": "PDF Presenter",
+  "language": "Language",
+  "lock_unlock": "Lock/Unlock",
+  "organize_pages": "Organize Pages",
+  "watermark": "Watermark & Number",
+  "scan_document": "Scan Document"
+}
