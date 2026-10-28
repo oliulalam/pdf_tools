@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
@@ -71,6 +72,10 @@ class PdfWatermarkProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Load the Bengali font bytes from assets to pass to the isolate
+      final ByteData fontByteData = await rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf');
+      final Uint8List fontUint8List = fontByteData.buffer.asUint8List();
+
       final bytes = await compute(
         _watermarkTask,
         _WatermarkParams(
@@ -78,6 +83,7 @@ class PdfWatermarkProvider extends ChangeNotifier {
           addWatermark: _addWatermark,
           watermarkText: _watermarkText,
           addPageNumbers: _addPageNumbers,
+          fontData: fontUint8List,
         ),
       );
 
@@ -113,19 +119,23 @@ class _WatermarkParams {
   final bool addWatermark;
   final String watermarkText;
   final bool addPageNumbers;
+  final Uint8List fontData;
   const _WatermarkParams({
     required this.inputPath,
     required this.addWatermark,
     required this.watermarkText,
     required this.addPageNumbers,
+    required this.fontData,
   });
 }
 
 Future<Uint8List> _watermarkTask(_WatermarkParams params) async {
   final bytes = File(params.inputPath).readAsBytesSync();
   final document = PdfDocument(inputBytes: bytes);
-  final font = PdfStandardFont(PdfFontFamily.helvetica, 40);
-  final smallFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
+  
+  // Use TrueType font to support Bengali and other Unicode characters
+  final font = PdfTrueTypeFont(params.fontData, 40);
+  final smallFont = PdfTrueTypeFont(params.fontData, 12);
 
   for (int i = 0; i < document.pages.count; i++) {
     final page = document.pages[i];

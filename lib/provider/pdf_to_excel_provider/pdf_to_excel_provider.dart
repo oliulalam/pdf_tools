@@ -104,6 +104,19 @@ class PdfToExcelProvider extends ChangeNotifier {
         }
       }
 
+      // Pad all rows to match the maximum number of columns
+      if (grid.isNotEmpty) {
+        int maxCols = 0;
+        for (var row in grid) {
+          if (row.length > maxCols) maxCols = row.length;
+        }
+        for (int i = 0; i < grid.length; i++) {
+          while (grid[i].length < maxCols) {
+            grid[i].add(""); // Pad with empty strings
+          }
+        }
+      }
+
       _extractedGrid = grid;
       _isLoading = false;
       _statusMessage = "Extraction Complete. Review data.";

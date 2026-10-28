@@ -107,9 +107,14 @@ class PdfToWordProvider extends ChangeNotifier {
         return false;
       }
 
-      _extractedText = extractedBuffer.toString();
+      _extractedText = extractedBuffer.toString().trim();
       _isLoading = false;
-      _statusMessage = "Extraction Complete. Review your text.";
+      
+      if (_extractedText!.isEmpty) {
+        _statusMessage = "কোনো লেখা পাওয়া যায়নি। বাংলা ভাষা এখনও সমর্থিত নয়।";
+      } else {
+        _statusMessage = "Extraction Complete. Review your text.";
+      }
       notifyListeners();
 
       if (await imageFile.exists()) await imageFile.delete();

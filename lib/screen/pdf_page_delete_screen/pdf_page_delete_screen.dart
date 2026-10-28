@@ -63,7 +63,7 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
 
                       SectionHeader(
                         title: "Selected PDF",
-                        trailingText: hasFile ? "Example preview" : null,
+                        trailingText: hasFile ? "Tap to select pages" : null,
                       ),
 
                       if (hasFile)

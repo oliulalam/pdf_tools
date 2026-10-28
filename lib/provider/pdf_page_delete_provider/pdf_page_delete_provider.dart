@@ -45,6 +45,16 @@ class PdfPageDeleteProvider extends ChangeNotifier {
   ) async {
     if (_selectedFile == null) return false;
 
+    // Verify at least one page remains
+    if (pagesToDelete.length >= _totalPages) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot delete all pages. At least one page must remain.')),
+        );
+      }
+      return false;
+    }
+
     _isLoading = true;
     _statusMessage = "Removing pages... (RAM Safe)";
     notifyListeners();
