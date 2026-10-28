@@ -29,12 +29,30 @@ class PdfToolKitApp extends StatefulWidget {
 
   @override
   State<PdfToolKitApp> createState() => _PdfToolKitAppState();
+
+  static String? pendingSharedPdfPath;
+
+  static void checkAndOpenPendingSharedFile(BuildContext context) {
+    if (pendingSharedPdfPath != null) {
+      final path = pendingSharedPdfPath!;
+      pendingSharedPdfPath = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PdfViewerScreen(
+              path: path,
+              title: p.basename(path),
+            ),
+          ),
+        );
+      });
+    }
+  }
 }
 
 class _PdfToolKitAppState extends State<PdfToolKitApp> {
   late StreamSubscription _intentDataStreamSubscription;
-
-  static String? _pendingSharedPdfPath;
 
   @override
   void initState() {
@@ -61,7 +79,7 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
       if (file.path.toLowerCase().endsWith('.pdf')) {
         if (isInitial) {
           // Store pending path to be handled after splash screen
-          _pendingSharedPdfPath = file.path;
+          PdfToolKitApp.pendingSharedPdfPath = file.path;
         } else {
           // Find top level navigator and push viewer if app is already running
           if (mounted) {
@@ -77,24 +95,6 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
         }
         break; // Just open the first PDF for now
       }
-    }
-  }
-
-  static void checkAndOpenPendingSharedFile(BuildContext context) {
-    if (_pendingSharedPdfPath != null) {
-      final path = _pendingSharedPdfPath!;
-      _pendingSharedPdfPath = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PdfViewerScreen(
-              path: path,
-              title: p.basename(path),
-            ),
-          ),
-        );
-      });
     }
   }
 

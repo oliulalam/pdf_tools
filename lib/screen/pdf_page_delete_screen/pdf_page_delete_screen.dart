@@ -6,6 +6,8 @@ import 'package:pdf_toolkit/widgets/tool_ui_components.dart';
 import 'package:provider/provider.dart';
 import '../../provider/pdf_page_delete_provider/pdf_page_delete_provider.dart';
 
+import 'package:pdfx/pdfx.dart';
+
 class PdfPageDeleteScreen extends StatefulWidget {
   const PdfPageDeleteScreen({super.key});
 
@@ -15,6 +17,22 @@ class PdfPageDeleteScreen extends StatefulWidget {
 
 class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
   final Set<int> _selectedPages = {};
+  PdfDocument? _pdfDocument;
+
+  void _loadPdfDocument(String path) async {
+    try {
+      _pdfDocument = await PdfDocument.openFile(path);
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint("Error loading pdf thumbnail: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _pdfDocument?.close();
+    super.dispose();
+  }
 
   void _togglePage(int page) {
     setState(() {
@@ -71,9 +89,12 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                           file: provider.selectedFile!,
                           onChange: provider.isLoading
                               ? null
-                              : () {
+                              : () async {
                                   _clearSelection();
-                                  provider.pickFile();
+                                  bool success = await provider.pickFile();
+                                  if (success && provider.selectedFile != null) {
+                                    _loadPdfDocument(provider.selectedFile!.path);
+                                  }
                                 },
                           badgeColor: Colors.pinkAccent,
                         )
@@ -86,7 +107,12 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                           child: InkWell(
                             onTap: provider.isLoading
                                 ? null
-                                : () => provider.pickFile(),
+                                : () async {
+                                    bool success = await provider.pickFile();
+                                    if (success && provider.selectedFile != null) {
+                                      _loadPdfDocument(provider.selectedFile!.path);
+                                    }
+                                  },
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
                               height: 100,
@@ -201,6 +227,23 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                                             ),
                                             child: Stack(
                                               children: [
+                                                Align(
+                                                  alignment: Alignment.center,
+                                                  child: _pdfDocument != null
+                                                    ? FutureBuilder<PdfPageImage?>(
+                                                        future: _pdfDocument!.getPage(pageNum).then((page) => page.render(width: page.width, height: page.height, format: PdfPageImageFormat.jpeg)),
+                                                        builder: (context, snapshot) {
+                                                          if (snapshot.hasData && snapshot.data != null) {
+                                                            return Image.memory(
+                                                              snapshot.data!.bytes,
+                                                              fit: BoxFit.contain,
+                                                            );
+                                                          }
+                                                          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                                                        },
+                                                      )
+                                                    : const Icon(Icons.description, color: Colors.black12, size: 40),
+                                                ),
                                                 if (isSelected)
                                                   const Positioned(
                                                     top: 4,
@@ -212,24 +255,6 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                                                       size: 16,
                                                     ),
                                                   ),
-                                                Align(
-                                                  alignment:
-                                                      Alignment.bottomCenter,
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          bottom: 8,
-                                                        ),
-                                                    child: Text(
-                                                      "$pageNum",
-                                                      style: const TextStyle(
-                                                        color: Colors.black54,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
                                               ],
                                             ),
                                           ),

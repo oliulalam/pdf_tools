@@ -20,7 +20,7 @@ class PdfPageDeleteProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get statusMessage => _statusMessage;
 
-  Future<void> pickFile() async {
+  Future<bool> pickFile() async {
     final FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -36,7 +36,9 @@ class PdfPageDeleteProvider extends ChangeNotifier {
       document.dispose();
       _statusMessage = null;
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   Future<bool> deletePagesAndSave(

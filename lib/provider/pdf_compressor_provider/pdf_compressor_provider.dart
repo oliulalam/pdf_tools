@@ -13,6 +13,7 @@ import 'package:open_filex/open_filex.dart';
 
 class PdfCompressorProvider extends ChangeNotifier {
   File? _selectedFile;
+  Uint8List? _originalFileBytes;
   bool _isLoading = false;
   String? _statusMessage;
   double _quality = 0.5;
@@ -37,6 +38,7 @@ class PdfCompressorProvider extends ChangeNotifier {
 
     if (pickedFile != null && pickedFile.path != null) {
       _selectedFile = File(pickedFile.path!);
+      _originalFileBytes = await _selectedFile!.readAsBytes();
       final size = await _selectedFile!.length();
       final double sizeMB = size / (1024 * 1024);
       _statusMessage = "Original Size: ${sizeMB.toStringAsFixed(2)} MB";
