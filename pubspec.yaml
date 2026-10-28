@@ -110,6 +110,7 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/translations/
+    - assets/fonts/NotoSansBengali-Regular.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
