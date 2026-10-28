@@ -49,6 +49,15 @@
                 <data android:mimeType="application/pdf" />
                 <data android:mimeType="image/*" />
             </intent-filter>
+            <!-- Intent filter to allow "Open with" PDF Quant from File Managers -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
         </activity>
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -58,10 +67,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Automatically download the OCR model for Google ML Kit -->
+        <!-- Automatically download the OCR model for Google ML Kit (including Devanagari support) -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="ocr" />
+            android:value="ocr,ocr_devanagari" />
     </application>
     <queries>
         <intent>
