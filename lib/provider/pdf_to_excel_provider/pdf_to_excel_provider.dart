@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -167,8 +168,8 @@ class PdfToExcelProvider extends ChangeNotifier {
     try {
       String csvData = Csv().encode(_extractedGrid!);
 
-      // UTF-8 BOM for Excel compatibility
-      final List<int> bytes = [0xEF, 0xBB, 0xBF, ...csvData.codeUnits];
+      // UTF-8 BOM for Excel compatibility and proper UTF-8 encoding
+      final List<int> bytes = [0xEF, 0xBB, 0xBF, ...utf8.encode(csvData)];
 
       final String? outputPath = await FilePicker.saveFile(
         dialogTitle: 'Save CSV Document',
