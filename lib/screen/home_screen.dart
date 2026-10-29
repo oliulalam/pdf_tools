@@ -6,7 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:intl/intl.dart';
+import 'package:pdf_toolkit/app.dart';
 
 // Providers
 import 'package:fluttertoast/fluttertoast.dart';
@@ -44,6 +44,7 @@ import 'package:pdf_toolkit/provider/pdf_scanner_provider/pdf_scanner_provider.d
 // Utils
 import 'package:pdf_toolkit/utils/ad_helper.dart';
 import 'package:pdf_toolkit/widgets/banner_ad_widget.dart';
+import 'package:pdf_toolkit/app.dart';
 
 class PdfTool {
   final String title;
@@ -67,10 +68,6 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-
-import 'package:pdf_toolkit/app.dart';
-
-import 'package:pdf_toolkit/app.dart';
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
