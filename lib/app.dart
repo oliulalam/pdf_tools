@@ -56,6 +56,12 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
   @override
   void initState() {
     super.initState();
+    
+    // Clear any FilePicker temp files on startup to free up space
+    FilePicker.platform.clearTemporaryFiles().catchError((e) {
+      debugPrint("Error clearing file picker temp files: $e");
+      return false; // Return dummy value to match Future signature if needed
+    });
 
     // For sharing images/PDFs coming from outside the app while the app is in the memory
     _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
