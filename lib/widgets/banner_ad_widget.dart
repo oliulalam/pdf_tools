@@ -16,13 +16,19 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    AdHelper.adsReady.addListener(_onAdsReadyChanged);
+    if (AdHelper.adsReady.value) {
+      _loadAd();
+    }
   }
 
-  void _loadAd() async {
-    final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (!canRequest) return;
+  void _onAdsReadyChanged() {
+    if (AdHelper.adsReady.value && _bannerAd == null && mounted) {
+      _loadAd();
+    }
+  }
 
+  void _loadAd() {
     _bannerAd = BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
       size: AdSize.banner,
@@ -37,15 +43,19 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
+          _bannerAd = null;
           debugPrint('BannerAd failed to load: $error');
         },
       ),
     );
-    _bannerAd!.load();
+    if (mounted) {
+      _bannerAd!.load();
+    }
   }
 
   @override
   void dispose() {
+    AdHelper.adsReady.removeListener(_onAdsReadyChanged);
     _bannerAd?.dispose();
     super.dispose();
   }

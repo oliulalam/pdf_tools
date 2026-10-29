@@ -52,10 +52,14 @@ class AdHelper {
     );
   }
 
+  // ValueNotifier to trigger banner ads when consent is obtained
+  static final ValueNotifier<bool> adsReady = ValueNotifier(false);
+
   static Future<void> _initializeAdsIfReady() async {
     final canRequest = await ConsentInformation.instance.canRequestAds();
     if (canRequest) {
       await MobileAds.instance.initialize();
+      adsReady.value = true;
       loadInterstitialAd();
     }
   }
@@ -85,10 +89,16 @@ class AdHelper {
     );
   }
 
-  static void loadInterstitialAd({
+  static Future<void> loadInterstitialAd({
     VoidCallback? onAdLoaded,
     VoidCallback? onAdFailed,
-  }) {
+  }) async {
+    final canRequest = await ConsentInformation.instance.canRequestAds();
+    if (!canRequest) {
+      onAdFailed?.call();
+      return;
+    }
+
     if (_isInterstitialAdLoading || _interstitialAd != null) {
       debugPrint("AdHelper: Ad already loading or loaded.");
       onAdLoaded?.call();
