@@ -100,7 +100,6 @@ class PdfCompressorScreen extends StatelessWidget {
                           icon: Icons.auto_awesome_rounded,
                           qualityValue: 0.8,
                           currentQuality: provider.quality,
-                          originalSizeMb: currentSizeMb,
                           onSelect: () => provider.setQuality(0.8),
                         ),
                         _buildCompressionOption(
@@ -112,7 +111,6 @@ class PdfCompressorScreen extends StatelessWidget {
                           icon: Icons.speed_rounded,
                           qualityValue: 0.5,
                           currentQuality: provider.quality,
-                          originalSizeMb: currentSizeMb,
                           onSelect: () => provider.setQuality(0.5),
                           isRecommended: true,
                         ),
@@ -125,7 +123,6 @@ class PdfCompressorScreen extends StatelessWidget {
                           icon: Icons.bolt_rounded,
                           qualityValue: 0.2,
                           currentQuality: provider.quality,
-                          originalSizeMb: currentSizeMb,
                           onSelect: () => provider.setQuality(0.2),
                         ),
 
@@ -199,7 +196,6 @@ class PdfCompressorScreen extends StatelessWidget {
     required IconData icon,
     required double qualityValue,
     required double currentQuality,
-    required double originalSizeMb,
     required VoidCallback onSelect,
     bool isRecommended = false,
   }) {
@@ -317,14 +313,14 @@ class PdfCompressorScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Estimated Output Size",
+                "Image Quality",
                 style: TextStyle(fontSize: 12, color: theme.hintColor),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            "Approx. ${(quality * 100).toInt()}% of original",
+            "Quality: ${(quality * 100).toInt()}%",
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w900,

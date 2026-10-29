@@ -137,14 +137,20 @@ class PdfCompressorProvider extends ChangeNotifier {
 
       _isLoading = false;
       final double finalSizeMB = finalBytes.lengthInBytes / (1024 * 1024);
+      String resultMsg = "";
       if (keptOriginal) {
-        _statusMessage = "⚠️ Kept original file (Text may not be selectable). Size: ${finalSizeMB.toStringAsFixed(2)} MB";
+        resultMsg = "⚠️ Target file is too small or couldn't be compressed. Saved original file. Size: ${finalSizeMB.toStringAsFixed(2)} MB";
+        _statusMessage = "Kept original file";
       } else {
-        _statusMessage = "✅ Success! Compressed Size: ${finalSizeMB.toStringAsFixed(2)} MB (Text may not be selectable)";
+        resultMsg = "✅ Success! Compressed Size: ${finalSizeMB.toStringAsFixed(2)} MB (Text may not be selectable)";
+        _statusMessage = "Compression complete!";
       }
       notifyListeners();
 
       if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(resultMsg)),
+        );
         context.read<FileHistoryProvider>().addFile(outputPath);
         await OpenFilex.open(outputPath);
       }
@@ -152,8 +158,17 @@ class PdfCompressorProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint("Compression Error: $e");
       _isLoading = false;
-      _statusMessage = "Error: $e";
+      _statusMessage = "Error: Failed to compress";
       notifyListeners();
+      if (context.mounted) {
+        String msg = 'Failed to compress PDF: $e';
+        if (e.toString().toLowerCase().contains('password') || e.toString().toLowerCase().contains('encrypt')) {
+          msg = 'Failed: Please unlock the PDF before compressing.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
       return false;
     } finally {
       // Cleanup: Delete temporary session images
