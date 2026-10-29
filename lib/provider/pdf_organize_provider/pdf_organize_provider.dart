@@ -122,6 +122,16 @@ class PdfOrganizeProvider extends ChangeNotifier {
       _isLoading = false;
       _statusMessage = "Error occurred during organizing.";
       notifyListeners();
+      
+      if (context.mounted) {
+        String msg = 'Failed to organize PDF.';
+        if (e.toString().toLowerCase().contains('password') || e.toString().toLowerCase().contains('encrypt')) {
+          msg = 'Failed: Please unlock the PDF before organizing pages.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
       return false;
     }
   }

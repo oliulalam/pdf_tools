@@ -15,10 +15,13 @@ class PdfSecurityScreen extends StatefulWidget {
 
 class _PdfSecurityScreenState extends State<PdfSecurityScreen> {
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  bool _obscureText = true;
 
   @override
   void dispose() {
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -131,14 +134,47 @@ class _PdfSecurityScreenState extends State<PdfSecurityScreen> {
                           ),
                           child: TextField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscureText,
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: provider.isLocking ? "Enter new password" : "Enter current password",
                               icon: const Icon(Icons.key_rounded),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureText ? Icons.visibility_off : Icons.visibility,
+                                  color: theme.hintColor,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureText = !_obscureText;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ),
+                        
+                        if (provider.isLocking) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: theme.cardColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: theme.dividerColor),
+                            ),
+                            child: TextField(
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureText,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                hintText: "Confirm password",
+                                icon: Icon(Icons.lock_outline_rounded),
+                              ),
+                            ),
+                          ),
+                        ],
 
                         if (provider.isLoading) ...[
                           const SizedBox(height: 24),
@@ -172,6 +208,13 @@ class _PdfSecurityScreenState extends State<PdfSecurityScreen> {
                       );
                       return;
                     }
+                    if (provider.isLocking && _passwordController.text != _confirmPasswordController.text) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Passwords do not match!")),
+                      );
+                      return;
+                    }
+                    FocusScope.of(context).unfocus(); // Hide keyboard
                     final success = await provider.processAndSave(
                       context,
                       _passwordController.text,

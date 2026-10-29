@@ -109,6 +109,16 @@ class PdfWatermarkProvider extends ChangeNotifier {
       _isLoading = false;
       _statusMessage = "Error occurred.";
       notifyListeners();
+      
+      if (context.mounted) {
+        String msg = 'Failed to apply watermark.';
+        if (e.toString().toLowerCase().contains('password') || e.toString().toLowerCase().contains('encrypt')) {
+          msg = 'Failed: Please unlock the PDF before adding a watermark.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
       return false;
     }
   }

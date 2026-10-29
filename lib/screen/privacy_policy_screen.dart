@@ -143,7 +143,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "We use Google AdMob to display banner and interstitial advertisements. AdMob may collect certain data including:\n\n"
                   "• Device identifiers (e.g., Advertising ID / AD_ID)\n"
                   "• Coarse Location (estimated from IP address) for ad targeting\n"
-                  "• Usage data and crash logs for ad personalization and analytics\n\n"
+                  "• Usage data and crash logs for ad personalization\n\n"
                   "We use Google's User Messaging Platform (UMP) to request your consent (where legally required) before displaying personalized ads.\n\n"
                   "For more information, see Google's Privacy Policy:\nhttps://policies.google.com/privacy",
             ),
@@ -227,9 +227,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "Depending on your location, you may have the following rights:\n\n"
                   "• Right to Access: We do not store personal data on our servers. For data collected by Google AdMob (such as Advertising ID), please refer to Google's data access tools at myaccount.google.com\n"
                   "• Right to Deletion: You can use the 'Clear History' option in the Recent Documents / My Files screen to remove the local list of file names and paths at any time, or uninstall the app to delete all local app data.\n"
-                  "• Right to Withdraw Consent: Change ad preference in app Settings\n"
+                  "• Right to Withdraw Consent: Use the 'Privacy Options' button at the bottom of the Settings screen to change your ad consent preferences\n"
                   "• Right to Opt-Out: Android Settings → Google → Ads → Opt out of Ads Personalization\n"
-                  "• Right to Object: Decline analytics data collection or personalized ads at any time via the consent form or device settings\n\n"
+                  "• Right to Object: Decline personalized ads at any time via the consent form or device settings\n\n"
                   "California residents (CCPA): We do not sell your personal information.\n\n"
                   "To exercise your rights, contact us at the email below.",
             ),

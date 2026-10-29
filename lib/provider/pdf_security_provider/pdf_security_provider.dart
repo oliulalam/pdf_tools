@@ -96,6 +96,16 @@ class PdfSecurityProvider extends ChangeNotifier {
       _isLoading = false;
       _statusMessage = "Error: Invalid password or corrupted file.";
       notifyListeners();
+      
+      if (context.mounted) {
+        String msg = 'Failed to process PDF.';
+        if (e.toString().toLowerCase().contains('password') || e.toString().toLowerCase().contains('encrypt')) {
+          msg = 'Failed: Please make sure the password is correct, or unlock the PDF first.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
       return false;
     }
   }
@@ -121,6 +131,7 @@ Future<Uint8List?> _securityTask(_SecurityParams params) async {
       document = PdfDocument(inputBytes: bytes);
       document.security.userPassword = params.password;
       document.security.ownerPassword = params.password;
+      document.security.algorithm = PdfEncryptionAlgorithm.aesx256Bit;
     } else {
       document = PdfDocument(inputBytes: bytes, password: params.password);
       document.security.userPassword = '';

@@ -92,6 +92,9 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
              );
           }
         }
+        
+        // Reset the intent so it doesn't trigger again on subsequent app resumes
+        ReceiveSharingIntent.instance.reset();
         break; // Just open the first PDF for now
       }
     }
