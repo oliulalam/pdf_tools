@@ -200,12 +200,10 @@ class PdfCompressorScreen extends StatelessWidget {
     required double qualityValue,
     required double currentQuality,
     required double originalSizeMb,
-    required double estimatedReduction,
     required VoidCallback onSelect,
     bool isRecommended = false,
   }) {
     final isSelected = (currentQuality - qualityValue).abs() < 0.01;
-    final estimatedSize = originalSizeMb * (1 - estimatedReduction);
 
     return GestureDetector(
       onTap: onSelect,
@@ -283,23 +281,6 @@ class PdfCompressorScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  "${estimatedSize.toStringAsFixed(1)} MB",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  "about ${(estimatedReduction * 100).toInt()}% smaller",
-                  style: TextStyle(fontSize: 10, color: theme.hintColor),
-                ),
-              ],
-            ),
             const SizedBox(width: 12),
             Icon(
               isSelected
@@ -321,12 +302,6 @@ class PdfCompressorScreen extends StatelessWidget {
     double quality,
     double originalSizeMb,
   ) {
-    double estimatedReduction = 0.49;
-    if (quality >= 0.8) estimatedReduction = 0.27;
-    if (quality <= 0.2) estimatedReduction = 0.68;
-
-    final estimatedSize = originalSizeMb * (1 - estimatedReduction);
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(20),
@@ -342,31 +317,16 @@ class PdfCompressorScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Estimated output size",
+                "Estimated Output Size",
                 style: TextStyle(fontSize: 12, color: theme.hintColor),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurpleAccent.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "${(estimatedReduction * 100).toInt()}% smaller",
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurpleAccent,
-                  ),
-                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            "${estimatedSize.toStringAsFixed(1)} MB",
+            "Approx. ${(quality * 100).toInt()}% of original",
             style: TextStyle(
-              fontSize: 32,
+              fontSize: 24,
               fontWeight: FontWeight.w900,
               color: theme.colorScheme.onSurface,
             ),
@@ -375,7 +335,7 @@ class PdfCompressorScreen extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: 1 - estimatedReduction,
+              value: quality,
               backgroundColor: theme.dividerColor.withAlpha(30),
               color: Colors.deepPurpleAccent,
               minHeight: 6,
@@ -390,7 +350,7 @@ class PdfCompressorScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 11, color: theme.hintColor),
               ),
               Text(
-                "Estimate may vary",
+                "Actual size varies by document",
                 style: TextStyle(fontSize: 11, color: theme.hintColor),
               ),
             ],
