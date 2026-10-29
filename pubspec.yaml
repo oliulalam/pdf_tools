@@ -46,7 +46,7 @@ dependencies:
 
   # PDF handling
   pdf: ^3.11.1
-  pdfx: ^2.11.0
+  pdfx: 2.11.0
   printing: ^5.15.0
   syncfusion_flutter_pdf: ^34.1.32
   syncfusion_flutter_core: ^34.1.32

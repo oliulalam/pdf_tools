@@ -19,7 +19,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     _loadAd();
   }
 
-  void _loadAd() {
+  void _loadAd() async {
+    final canRequest = await ConsentInformation.instance.canRequestAds();
+    if (!canRequest) return;
+
     _bannerAd = BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
       size: AdSize.banner,

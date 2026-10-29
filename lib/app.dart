@@ -22,7 +22,6 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:pdf_toolkit/screen/pdf_viewer_screen/pdf_viewer_screen.dart';
 import 'package:path/path.dart' as p;
 import 'dart:async';
-import 'package:flutter/material.dart';
 
 class PdfToolKitApp extends StatefulWidget {
   const PdfToolKitApp({super.key});

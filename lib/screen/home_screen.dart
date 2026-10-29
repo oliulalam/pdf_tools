@@ -44,7 +44,6 @@ import 'package:pdf_toolkit/provider/pdf_scanner_provider/pdf_scanner_provider.d
 // Utils
 import 'package:pdf_toolkit/utils/ad_helper.dart';
 import 'package:pdf_toolkit/widgets/banner_ad_widget.dart';
-import 'package:pdf_toolkit/app.dart';
 
 class PdfTool {
   final String title;

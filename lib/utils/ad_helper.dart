@@ -53,8 +53,8 @@ class AdHelper {
   }
 
   static Future<void> _initializeAdsIfReady() async {
-    final consentStatus = await ConsentInformation.instance.getConsentStatus();
-    if (consentStatus == ConsentStatus.obtained || consentStatus == ConsentStatus.notRequired) {
+    final canRequest = await ConsentInformation.instance.canRequestAds();
+    if (canRequest) {
       await MobileAds.instance.initialize();
       loadInterstitialAd();
     }
