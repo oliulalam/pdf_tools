@@ -45,7 +45,11 @@ class ToolAppBar extends StatelessWidget implements PreferredSizeWidget {
             Icons.help_outline_rounded,
             color: theme.colorScheme.onSurface,
           ),
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Help details are available in the Settings screen.')),
+            );
+          },
         ),
       ],
     );

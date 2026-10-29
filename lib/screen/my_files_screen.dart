@@ -217,8 +217,14 @@ class _FileItemCardState extends State<_FileItemCard> {
                 final newPath = p.join(dir, newName.endsWith(ext) ? newName : '$newName$ext');
                 
                 final success = await context.read<FileHistoryProvider>().renameFile(widget.path, newPath);
-                if (mounted && success) {
-                  Navigator.pop(context);
+                if (mounted) {
+                  if (success) {
+                    Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to rename file.')),
+                    );
+                  }
                 }
               }
             },
@@ -248,9 +254,7 @@ class _FileItemCardState extends State<_FileItemCard> {
         String subtitle = "Loading...";
 
         if (snapshot.hasData) {
-          final size = (file.lengthSync() / 1024).toStringAsFixed(
-            1,
-          ); // lengthSync is okay on small files, but stat is async
+          final size = (snapshot.data!.size / 1024).toStringAsFixed(1);
           final date = DateFormat(
             'dd MMM yyyy, hh:mm a',
           ).format(snapshot.data!.modified);
@@ -314,6 +318,13 @@ class _FileItemCardState extends State<_FileItemCard> {
                   _renameFile(context, fileName);
                 } else if (value == 'delete') {
                   widget.onRemove();
+                } else if (value == 'delete_file') {
+                  widget.onRemove();
+                  try {
+                    await file.delete();
+                  } catch (e) {
+                    debugPrint("Failed to delete file from storage: $e");
+                  }
                 }
               },
               itemBuilder: (context) => [
@@ -335,6 +346,13 @@ class _FileItemCardState extends State<_FileItemCard> {
                   value: 'delete',
                   child: Text(
                     "Remove from list",
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete_file',
+                  child: Text(
+                    "Delete File permanently",
                     style: TextStyle(color: Colors.redAccent),
                   ),
                 ),

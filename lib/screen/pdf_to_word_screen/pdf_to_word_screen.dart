@@ -311,7 +311,7 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
 
             const SectionHeader(
               title: "Scanned pages",
-              trailingText: "AI Detection",
+              trailingText: "ML Kit OCR",
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -363,9 +363,7 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
                     Switch(
                       value: _useOcr,
                       activeColor: Colors.blue[700],
-                      onChanged: (val) {
-                        // Fixed to true since our backend uses OCR
-                      },
+                      onChanged: null,
                     ),
                   ],
                 ),

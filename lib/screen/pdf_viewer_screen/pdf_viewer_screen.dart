@@ -21,6 +21,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
 
   @override
+  void dispose() {
+    _pdfViewerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final file = File(widget.path);
@@ -44,6 +50,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               controller: _pdfViewerController,
               canShowScrollHead: false,
               canShowScrollStatus: true,
+              onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to load PDF: ${details.error}')),
+                  );
+                }
+              },
             )
           : const Center(
               child: Text("File not found or deleted."),

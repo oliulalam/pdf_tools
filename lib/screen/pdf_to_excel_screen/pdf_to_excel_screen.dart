@@ -168,7 +168,7 @@ class _PdfToExcelScreenState extends State<PdfToExcelScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            "Choose pages",
+                            "All pages selected",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: theme.hintColor,
