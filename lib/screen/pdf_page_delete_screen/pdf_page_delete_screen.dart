@@ -22,9 +22,15 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
 
   void _loadPdfDocument(String path) async {
     try {
-      if (_pdfDocument != null) {
-        await _pdfDocument!.close();
-        _pageThumbnailsCache.clear();
+      final oldDoc = _pdfDocument;
+      if (mounted) {
+        setState(() {
+          _pageThumbnailsCache.clear();
+          _pdfDocument = null;
+        });
+      }
+      if (oldDoc != null) {
+        await oldDoc.close();
       }
       final doc = await PdfDocument.openFile(path);
       if (mounted) {
@@ -305,7 +311,7 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                                                     child: Container(
                                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.black.withOpacity(0.6),
+                                                        color: Colors.black.withAlpha((0.6 * 255).toInt()),
                                                         borderRadius: BorderRadius.circular(4),
                                                       ),
                                                       child: Text(

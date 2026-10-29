@@ -8,6 +8,8 @@ import 'package:pdf_toolkit/widgets/tool_ui_components.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:provider/provider.dart';
 
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 class PdfPresenterScreen extends StatefulWidget {
   const PdfPresenterScreen({super.key});
 
@@ -25,6 +27,7 @@ class _PdfPresenterScreenState extends State<PdfPresenterScreen> {
   void dispose() {
     _restoreSystemUI();
     _pdfController?.dispose();
+    WakelockPlus.disable();
     super.dispose();
   }
 
@@ -36,6 +39,10 @@ class _PdfPresenterScreenState extends State<PdfPresenterScreen> {
     setState(() {
       _isPresenting = true;
     });
+
+    if (_keepAwake) {
+      WakelockPlus.enable();
+    }
 
     if (_orientation == 'Landscape') {
       SystemChrome.setPreferredOrientations([
@@ -50,11 +57,10 @@ class _PdfPresenterScreenState extends State<PdfPresenterScreen> {
 
   void _exitPresentation() {
     _restoreSystemUI();
+    WakelockPlus.disable();
     setState(() {
       _isPresenting = false;
     });
-
-    AdHelper.showInterstitialAd(() {});
   }
 
   void _restoreSystemUI() {

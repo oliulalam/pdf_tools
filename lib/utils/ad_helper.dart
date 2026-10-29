@@ -60,7 +60,7 @@ class AdHelper {
     if (canRequest) {
       await MobileAds.instance.initialize();
       adsReady.value = true;
-      loadInterstitialAd();
+      unawaited(loadInterstitialAd());
     }
   }
 
@@ -69,14 +69,14 @@ class AdHelper {
     final completer = Completer<void>();
 
     // Attempt to load and wait for it
-    loadInterstitialAd(
+    unawaited(loadInterstitialAd(
       onAdLoaded: () {
         if (!completer.isCompleted) completer.complete();
       },
       onAdFailed: () {
         if (!completer.isCompleted) completer.complete();
       },
-    );
+    ));
 
     // Wait for the ad to load OR max 3 seconds to not hold splash too long
     await completer.future.timeout(
@@ -183,7 +183,7 @@ class AdHelper {
         "AdHelper: Ad not available. Action continues, ad loading in background.",
       );
       onAdDismissed();
-      loadInterstitialAd();
+      unawaited(loadInterstitialAd());
       return;
     }
 
@@ -196,14 +196,14 @@ class AdHelper {
         debugPrint("AdHelper: Ad dismissed by user.");
         ad.dispose();
         _interstitialAd = null;
-        loadInterstitialAd(); // Load next ad immediately
+        unawaited(loadInterstitialAd()); // Load next ad immediately
         onAdDismissed();
       },
       onAdFailedToShowFullScreenContent: (ad, err) {
         debugPrint("AdHelper: Ad failed to show: ${err.message}");
         ad.dispose();
         _interstitialAd = null;
-        loadInterstitialAd();
+        unawaited(loadInterstitialAd());
         onAdDismissed();
       },
     );
@@ -214,7 +214,7 @@ class AdHelper {
       debugPrint("AdHelper: Critical error showing ad: $e");
       _interstitialAd?.dispose();
       _interstitialAd = null;
-      loadInterstitialAd();
+      unawaited(loadInterstitialAd());
       onAdDismissed();
     }
   }
