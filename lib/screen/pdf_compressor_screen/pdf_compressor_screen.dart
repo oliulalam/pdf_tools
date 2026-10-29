@@ -101,8 +101,6 @@ class PdfCompressorScreen extends StatelessWidget {
                           qualityValue: 0.8,
                           currentQuality: provider.quality,
                           originalSizeMb: currentSizeMb,
-                          estimatedReduction:
-                              0.27, // Mock estimation percentage
                           onSelect: () => provider.setQuality(0.8),
                         ),
                         _buildCompressionOption(
@@ -115,7 +113,6 @@ class PdfCompressorScreen extends StatelessWidget {
                           qualityValue: 0.5,
                           currentQuality: provider.quality,
                           originalSizeMb: currentSizeMb,
-                          estimatedReduction: 0.49,
                           onSelect: () => provider.setQuality(0.5),
                           isRecommended: true,
                         ),
@@ -129,7 +126,6 @@ class PdfCompressorScreen extends StatelessWidget {
                           qualityValue: 0.2,
                           currentQuality: provider.quality,
                           originalSizeMb: currentSizeMb,
-                          estimatedReduction: 0.68,
                           onSelect: () => provider.setQuality(0.2),
                         ),
 

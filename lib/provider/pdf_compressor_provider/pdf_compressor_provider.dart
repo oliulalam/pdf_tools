@@ -13,7 +13,7 @@ import 'package:open_filex/open_filex.dart';
 
 class PdfCompressorProvider extends ChangeNotifier {
   File? _selectedFile;
-  Uint8List? _originalFileBytes;
+  int _originalFileSize = 0;
   bool _isLoading = false;
   String? _statusMessage;
   double _quality = 0.5;
@@ -38,9 +38,8 @@ class PdfCompressorProvider extends ChangeNotifier {
 
     if (pickedFile != null && pickedFile.path != null) {
       _selectedFile = File(pickedFile.path!);
-      _originalFileBytes = await _selectedFile!.readAsBytes();
-      final size = await _selectedFile!.length();
-      final double sizeMB = size / (1024 * 1024);
+      _originalFileSize = await _selectedFile!.length();
+      final double sizeMB = _originalFileSize / (1024 * 1024);
       _statusMessage = "Original Size: ${sizeMB.toStringAsFixed(2)} MB";
       notifyListeners();
     }
@@ -111,8 +110,10 @@ class PdfCompressorProvider extends ChangeNotifier {
 
       // Check if compressed file is actually larger than original
       final Uint8List finalBytes;
-      if (compressedBytes.lengthInBytes >= _originalFileBytes!.lengthInBytes) {
-        finalBytes = _originalFileBytes!;
+      bool keptOriginal = false;
+      if (compressedBytes.lengthInBytes >= _originalFileSize) {
+        finalBytes = await _selectedFile!.readAsBytes();
+        keptOriginal = true;
         _statusMessage = "⚠️ Target file is too small or couldn't be compressed. Saving original.";
         notifyListeners();
       } else {
@@ -136,7 +137,7 @@ class PdfCompressorProvider extends ChangeNotifier {
 
       _isLoading = false;
       final double finalSizeMB = finalBytes.lengthInBytes / (1024 * 1024);
-      if (finalBytes == _originalFileBytes!) {
+      if (keptOriginal) {
         _statusMessage = "⚠️ Kept original file (Text may not be selectable). Size: ${finalSizeMB.toStringAsFixed(2)} MB";
       } else {
         _statusMessage = "✅ Success! Compressed Size: ${finalSizeMB.toStringAsFixed(2)} MB (Text may not be selectable)";

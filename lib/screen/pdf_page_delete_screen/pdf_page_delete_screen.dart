@@ -18,14 +18,53 @@ class PdfPageDeleteScreen extends StatefulWidget {
 class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
   final Set<int> _selectedPages = {};
   PdfDocument? _pdfDocument;
+  final Map<int, Future<PdfPageImage?>> _pageThumbnailsCache = {};
 
   void _loadPdfDocument(String path) async {
     try {
-      _pdfDocument = await PdfDocument.openFile(path);
-      if (mounted) setState(() {});
+      if (_pdfDocument != null) {
+        await _pdfDocument!.close();
+        _pageThumbnailsCache.clear();
+      }
+      final doc = await PdfDocument.openFile(path);
+      if (mounted) {
+        setState(() {
+          _pdfDocument = doc;
+        });
+      }
     } catch (e) {
       debugPrint("Error loading pdf thumbnail: $e");
     }
+  }
+
+  Future<PdfPageImage?> _getPageThumbnail(int pageNum) {
+    if (_pageThumbnailsCache.containsKey(pageNum)) {
+      return _pageThumbnailsCache[pageNum]!;
+    }
+
+    final future = () async {
+      if (_pdfDocument == null) return null;
+      PdfPage? page;
+      try {
+        page = await _pdfDocument!.getPage(pageNum);
+        // Render at a smaller resolution to save memory (e.g., max width 200)
+        final double aspectRatio = page.width / page.height;
+        final int targetWidth = 200;
+        final int targetHeight = (targetWidth / aspectRatio).round();
+        
+        final image = await page.render(
+          width: targetWidth.toDouble(),
+          height: targetHeight.toDouble(),
+          format: PdfPageImageFormat.jpeg,
+        );
+        return image;
+      } finally {
+        await page?.close();
+      }
+    }();
+
+    _pageThumbnailsCache[pageNum] = future;
+    return future;
   }
 
   @override
@@ -231,7 +270,7 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                                                   alignment: Alignment.center,
                                                   child: _pdfDocument != null
                                                     ? FutureBuilder<PdfPageImage?>(
-                                                        future: _pdfDocument!.getPage(pageNum).then((page) => page.render(width: page.width, height: page.height, format: PdfPageImageFormat.jpeg)),
+                                                        future: _getPageThumbnail(pageNum),
                                                         builder: (context, snapshot) {
                                                           if (snapshot.hasData && snapshot.data != null) {
                                                             return Image.memory(
@@ -255,6 +294,32 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                                                       size: 16,
                                                     ),
                                                   ),
+                                                Align(
+                                                  alignment:
+                                                      Alignment.bottomCenter,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          bottom: 4,
+                                                        ),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black.withOpacity(0.6),
+                                                        borderRadius: BorderRadius.circular(4),
+                                                      ),
+                                                      child: Text(
+                                                        "$pageNum",
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
