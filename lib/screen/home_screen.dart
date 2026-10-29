@@ -141,9 +141,9 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Recent',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded),
-              activeIcon: Icon(Icons.grid_view_rounded),
-              label: 'Tools',
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings_rounded),
+              label: 'Settings',
             ),
           ],
         ),
@@ -486,7 +486,7 @@ class _HomeTabState extends State<_HomeTab> {
                               setState(() => _searchQuery = val),
                           style: TextStyle(color: theme.colorScheme.onSurface),
                           decoration: InputDecoration(
-                            hintText: "Search tools or files",
+                            hintText: "Search tools",
                             hintStyle: TextStyle(
                               color: theme.hintColor.withAlpha(120),
                             ),
@@ -772,7 +772,7 @@ class _ToolsTab extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
           child: Text(
-            "Settings & More",
+            "Settings",
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w900,
