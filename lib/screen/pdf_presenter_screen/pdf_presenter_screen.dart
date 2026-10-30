@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf_toolkit/provider/pdf_presenter_provider/pdf_presenter_provider.dart';
-import 'package:pdf_toolkit/utils/ad_helper.dart';
-import 'package:pdf_toolkit/widgets/banner_ad_widget.dart';
 import 'package:pdf_toolkit/widgets/tool_ui_components.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:provider/provider.dart';
