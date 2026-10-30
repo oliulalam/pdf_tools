@@ -42,12 +42,23 @@ class PdfOrganizeProvider extends ChangeNotifier {
         final bytes = await _selectedFile!.readAsBytes();
         final doc = PdfDocument(inputBytes: bytes);
         _totalPages = doc.pages.count;
-        doc.dispose();
-
+        
         _pages = List.generate(
           _totalPages,
-          (index) => OrganizePageData(originalIndex: index),
+          (index) {
+            final page = doc.pages[index];
+            int initialRotation = 0;
+            if (page.rotation == PdfPageRotateAngle.rotateAngle90) initialRotation = 90;
+            if (page.rotation == PdfPageRotateAngle.rotateAngle180) initialRotation = 180;
+            if (page.rotation == PdfPageRotateAngle.rotateAngle270) initialRotation = 270;
+            
+            return OrganizePageData(
+              originalIndex: index,
+              rotationDegrees: initialRotation,
+            );
+          },
         );
+        doc.dispose();
 
         _isLoading = false;
         _statusMessage = null;
@@ -70,8 +81,20 @@ class PdfOrganizeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void rotatePage(int index) {
-    _pages[index].rotationDegrees = (_pages[index].rotationDegrees + 90) % 360;
+  void removePage(int index) {
+    if (_pages.length > 1) {
+      _pages.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  void rotatePage(int index, {bool counterClockwise = false}) {
+    if (counterClockwise) {
+      _pages[index].rotationDegrees = (_pages[index].rotationDegrees - 90) % 360;
+      if (_pages[index].rotationDegrees < 0) _pages[index].rotationDegrees += 360;
+    } else {
+      _pages[index].rotationDegrees = (_pages[index].rotationDegrees + 90) % 360;
+    }
     notifyListeners();
   }
 
@@ -87,8 +110,24 @@ class PdfOrganizeProvider extends ChangeNotifier {
   Future<bool> saveOrganizedPdf(BuildContext context) async {
     if (_selectedFile == null) return false;
 
+    // Verify if there are actual changes
+    bool hasChanges = _pages.length != _totalPages;
+    for (int i = 0; i < _pages.length; i++) {
+      if (_pages[i].originalIndex != i || _pages[i].rotationDegrees != 0) {
+        hasChanges = true;
+        break;
+      }
+    }
+
+    if (!hasChanges) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No changes detected to save.')),
+      );
+      return false;
+    }
+
     _isLoading = true;
-    _statusMessage = "Organizing PDF...";
+    _statusMessage = "Organizing PDF...\n(Note: Forms or links may be lost)";
     notifyListeners();
 
     try {
@@ -97,6 +136,7 @@ class PdfOrganizeProvider extends ChangeNotifier {
         _OrganizeParams(
           inputPath: _selectedFile!.path,
           pages: _pages.map((p) => {'index': p.originalIndex, 'rotation': p.rotationDegrees}).toList(),
+          hasChanges: hasChanges,
         ),
       );
 
@@ -140,7 +180,12 @@ class PdfOrganizeProvider extends ChangeNotifier {
 class _OrganizeParams {
   final String inputPath;
   final List<Map<String, int>> pages;
-  const _OrganizeParams({required this.inputPath, required this.pages});
+  final bool hasChanges;
+  const _OrganizeParams({
+    required this.inputPath,
+    required this.pages,
+    required this.hasChanges,
+  });
 }
 
 Future<Uint8List> _organizeTask(_OrganizeParams params) async {
@@ -148,6 +193,8 @@ Future<Uint8List> _organizeTask(_OrganizeParams params) async {
   final sourceDoc = PdfDocument(inputBytes: bytes);
   final newDoc = PdfDocument();
 
+  // Try to use templates but warn that forms/links might be lost.
+  // Syncfusion free doesn't easily support full importPage with form fields intact in an isolate.
   PdfSection? currentSection;
 
   for (var pageData in params.pages) {

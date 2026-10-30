@@ -32,7 +32,7 @@ class _PdfOrganizeScreenState extends State<PdfOrganizeScreen> {
                   children: [
                     const ToolHeader(
                       title: "Organize PDF",
-                      subtitle: "Rotate, reorder, or organize pages.",
+                      subtitle: "Rotate, reorder, and delete pages.",
                       icon: Icons.dashboard_customize_rounded,
                       color: Colors.amber,
                     ),
@@ -119,9 +119,20 @@ class _PdfOrganizeScreenState extends State<PdfOrganizeScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
+                                          icon: const Icon(Icons.rotate_left_rounded, color: Colors.blueAccent),
+                                          onPressed: () => provider.rotatePage(index, counterClockwise: true),
+                                        ),
+                                        IconButton(
                                           icon: const Icon(Icons.rotate_right_rounded, color: Colors.blueAccent),
                                           onPressed: () => provider.rotatePage(index),
                                         ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                                          onPressed: provider.pages.length > 1 
+                                              ? () => provider.removePage(index) 
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 8),
                                         const Icon(Icons.drag_handle_rounded, color: Colors.grey),
                                       ],
                                     ),
