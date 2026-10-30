@@ -204,32 +204,44 @@ Future<Uint8List> _organizeTask(_OrganizeParams params) async {
     final sourcePage = sourceDoc.pages[origIdx];
     final template = sourcePage.createTemplate();
     
-    // We apply rotation to the new page by setting the section rotation
-    PdfPageOrientation orientation = sourcePage.size.width > sourcePage.size.height
+    // Determine target size based on rotation
+    // If rotated by 90 or 270, width and height are swapped
+    bool isRotatedSideways = (rotation == 90 || rotation == 270);
+    Size targetSize = isRotatedSideways 
+        ? Size(sourcePage.size.height, sourcePage.size.width)
+        : sourcePage.size;
+
+    PdfPageOrientation targetOrientation = targetSize.width > targetSize.height
         ? PdfPageOrientation.landscape
         : PdfPageOrientation.portrait;
 
     if (currentSection == null ||
-        currentSection.pageSettings.size != sourcePage.size ||
-        currentSection.pageSettings.orientation != orientation) {
+        currentSection.pageSettings.size != targetSize ||
+        currentSection.pageSettings.orientation != targetOrientation) {
       currentSection = newDoc.sections!.add();
-      currentSection.pageSettings.size = sourcePage.size;
+      currentSection.pageSettings.size = targetSize;
       currentSection.pageSettings.margins.all = 0;
-      currentSection.pageSettings.orientation = orientation;
+      currentSection.pageSettings.orientation = targetOrientation;
     }
 
     final newPage = currentSection.pages.add();
     
-    // Apply rotation
+    // To rotate visually, we translate the graphics context and rotate it
+    newPage.graphics.save();
+    
     if (rotation == 90) {
-      newPage.rotation = PdfPageRotateAngle.rotateAngle90;
+      newPage.graphics.translateTransform(targetSize.width, 0);
+      newPage.graphics.rotateTransform(90);
     } else if (rotation == 180) {
-      newPage.rotation = PdfPageRotateAngle.rotateAngle180;
+      newPage.graphics.translateTransform(targetSize.width, targetSize.height);
+      newPage.graphics.rotateTransform(180);
     } else if (rotation == 270) {
-      newPage.rotation = PdfPageRotateAngle.rotateAngle270;
+      newPage.graphics.translateTransform(0, targetSize.height);
+      newPage.graphics.rotateTransform(270);
     }
 
     newPage.graphics.drawPdfTemplate(template, Offset.zero, sourcePage.size);
+    newPage.graphics.restore();
   }
 
   final outBytes = await newDoc.save();
