@@ -170,6 +170,7 @@ class PdfCompressorScreen extends StatelessWidget {
                     }
                   },
                 ),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },

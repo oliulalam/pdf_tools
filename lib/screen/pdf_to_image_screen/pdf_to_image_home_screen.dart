@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -360,6 +359,7 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
                     }
                   },
                 ),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },

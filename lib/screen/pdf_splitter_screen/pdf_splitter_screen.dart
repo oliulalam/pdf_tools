@@ -390,6 +390,7 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                     }
                   },
                 ),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },

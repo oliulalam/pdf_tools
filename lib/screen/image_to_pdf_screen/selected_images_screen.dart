@@ -250,6 +250,7 @@ class _SelectedImagesScreenState extends State<SelectedImagesScreen> {
                   color: Colors.blueAccent,
                   onAction: _createAndSavePdf,
                 ),
+              if (!provider.hasImages) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },
