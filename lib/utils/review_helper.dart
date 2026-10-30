@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ReviewHelper {
   static const String _actionCountKey = 'app_action_count';
-  static const int _actionThreshold = 3; // Request review after 3 successful actions
+  static const int _actionThreshold = 5; // Request review after 5 successful actions
 
   static Future<void> incrementActionAndRequestReview() async {
     try {

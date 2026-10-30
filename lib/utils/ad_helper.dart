@@ -5,31 +5,51 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:pdf_toolkit/utils/review_helper.dart';
 
 class AdHelper {
-  static String get bannerAdUnitId {
+  static const String _prodBannerHome = 'REPLACE_ME';
+  static const String _prodBannerRecent = 'REPLACE_ME';
+  static const String _prodBannerTools = 'REPLACE_ME';
+  static const String _prodInterstitial = 'REPLACE_ME';
+
+  static String get bannerHomeAdUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // Test ID
-    } else {
-      throw UnsupportedError('Unsupported platform');
+      return kDebugMode ? 'ca-app-pub-3940256099942544/6300978111' : _prodBannerHome;
     }
+    throw UnsupportedError('Unsupported platform');
   }
+
+  static String get bannerRecentAdUnitId {
+    if (Platform.isAndroid) {
+      return kDebugMode ? 'ca-app-pub-3940256099942544/6300978111' : _prodBannerRecent;
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+
+  static String get bannerToolsAdUnitId {
+    if (Platform.isAndroid) {
+      return kDebugMode ? 'ca-app-pub-3940256099942544/6300978111' : _prodBannerTools;
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+
+  // Alias to keep existing code compiling
+  static String get bannerAdUnitId => bannerToolsAdUnitId;
 
   static String get interstitialAdUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/1033173712'; // Test ID
-    } else {
-      throw UnsupportedError('Unsupported platform');
+      return kDebugMode ? 'ca-app-pub-3940256099942544/1033173712' : _prodInterstitial;
     }
+    throw UnsupportedError('Unsupported platform');
   }
 
   static InterstitialAd? _interstitialAd;
   static bool _isInterstitialAdLoading = false;
   static int _loadRetryCount = 0;
+  static DateTime? _interstitialLoadTime;
 
   static int _clickCount = 0;
   static DateTime? _lastAdTime;
-  // Adjusted as per Play Policy requirements for better UX
   static const int _adIntervalClicks = 3; 
-  static const int _adIntervalSeconds = 120; // 2 minutes gap
+  static const int _adIntervalSeconds = 180; // 3 minutes gap
 
   static Future<void> initializeMobileAdsAndConsent() async {
     final params = ConsentRequestParameters();
@@ -58,6 +78,11 @@ class AdHelper {
   static Future<void> _initializeAdsIfReady() async {
     final canRequest = await ConsentInformation.instance.canRequestAds();
     if (canRequest) {
+      if (kDebugMode) {
+        // Register test device IDs here if testing on physical device
+        final requestConfiguration = RequestConfiguration(testDeviceIds: []); // paste your device id here
+        MobileAds.instance.updateRequestConfiguration(requestConfiguration);
+      }
       await MobileAds.instance.initialize();
       adsReady.value = true;
       unawaited(loadInterstitialAd());
@@ -94,7 +119,7 @@ class AdHelper {
     VoidCallback? onAdFailed,
   }) async {
     final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (!canRequest) {
+    if (!canRequest || (!kDebugMode && interstitialAdUnitId == 'REPLACE_ME')) {
       onAdFailed?.call();
       return;
     }
@@ -117,6 +142,7 @@ class AdHelper {
         onAdLoaded: (ad) {
           debugPrint("AdHelper: Interstitial Ad loaded successfully.");
           _interstitialAd = ad;
+          _interstitialLoadTime = DateTime.now();
           _isInterstitialAdLoading = false;
           _loadRetryCount = 0;
           onAdLoaded?.call();
@@ -128,16 +154,18 @@ class AdHelper {
           _isInterstitialAdLoading = false;
           _interstitialAd = null;
 
-          // Exponential backoff retry
-          if (_loadRetryCount < 3) {
-            _loadRetryCount++;
-            int delay = _loadRetryCount * 10; // 10s, 20s, 30s
-            debugPrint("AdHelper: Retrying in $delay seconds...");
-            Future.delayed(
-              Duration(seconds: delay),
-              () => loadInterstitialAd(),
-            );
-          }
+          // Exponential backoff retry: 10s, 30s, 60s, then 5m
+          _loadRetryCount++;
+          int delay = 10;
+          if (_loadRetryCount == 2) delay = 30;
+          else if (_loadRetryCount == 3) delay = 60;
+          else if (_loadRetryCount > 3) delay = 300;
+          
+          debugPrint("AdHelper: Retrying in $delay seconds...");
+          Future.delayed(
+            Duration(seconds: delay),
+            () => loadInterstitialAd(),
+          );
 
           onAdFailed?.call();
         },
@@ -150,9 +178,6 @@ class AdHelper {
     debugPrint(
       "AdHelper: showInterstitialAd requested. Total Actions: $_clickCount",
     );
-    
-    // Request app review in the background on action completion
-    ReviewHelper.incrementActionAndRequestReview();
 
     bool shouldShowAd = false;
 
@@ -174,8 +199,19 @@ class AdHelper {
       debugPrint(
         "AdHelper: Policy - Skipping ad. Reason: Either interval not reached or clicks count too low.",
       );
+      // Request app review ONLY if ad is NOT shown
+      ReviewHelper.incrementActionAndRequestReview();
       onAdDismissed();
       return;
+    }
+
+    // Check expiry
+    if (_interstitialAd != null && _interstitialLoadTime != null) {
+      if (DateTime.now().difference(_interstitialLoadTime!).inMinutes > 55) {
+        debugPrint("AdHelper: Ad expired, discarding.");
+        _interstitialAd!.dispose();
+        _interstitialAd = null;
+      }
     }
 
     if (_interstitialAd == null) {

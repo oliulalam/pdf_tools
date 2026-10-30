@@ -51,7 +51,7 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
               ),
               if (provider.extractedText == null &&
                   provider.selectedFile == null)
-                const BannerAdWidget(),
+                const BannerAdWidget(placement: AdPlacement.tools),
             ],
           ),
         );

@@ -225,7 +225,7 @@ class _PdfSecurityScreenState extends State<PdfSecurityScreen> {
                     }
                   },
                 ),
-              if (!hasFile) const BannerAdWidget(),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           ),
         );

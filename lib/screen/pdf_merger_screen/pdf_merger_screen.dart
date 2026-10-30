@@ -360,7 +360,7 @@ class _PdfMergerScreenState extends State<PdfMergerScreen> {
                     }
                   },
                 ),
-              if (provider.fileCount < 2) const BannerAdWidget(),
+              if (provider.fileCount < 2) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },

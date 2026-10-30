@@ -40,7 +40,7 @@ class _PdfToExcelScreenState extends State<PdfToExcelScreen> {
               ),
               if (provider.extractedGrid == null &&
                   provider.selectedFile == null)
-                const BannerAdWidget(),
+                const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },

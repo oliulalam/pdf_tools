@@ -164,7 +164,7 @@ class _PdfOrganizeScreenState extends State<PdfOrganizeScreen> {
                     }
                   },
                 ),
-              if (!hasFile) const BannerAdWidget(),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           ),
         );

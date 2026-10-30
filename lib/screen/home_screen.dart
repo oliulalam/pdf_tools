@@ -640,21 +640,11 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: theme.cardColor,
-                      border: Border.all(
-                        color: theme.dividerColor.withAlpha(20),
-                      ),
-                    ),
-                    child: const BannerAdWidget(),
-                  ),
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: BannerAdWidget(placement: AdPlacement.home),
                 ),
-
                 const SizedBox(height: 32),
               ],
             ),

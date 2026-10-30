@@ -380,7 +380,6 @@ class _PdfPresenterScreenState extends State<PdfPresenterScreen> {
                     onAction: () =>
                         _startPresentation(provider.selectedFile!.path),
                   ),
-                if (!hasFile) const BannerAdWidget(),
               ],
             ),
           );

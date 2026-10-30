@@ -482,7 +482,7 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                           }
                         },
                 ),
-              if (!hasFile) const BannerAdWidget(),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           );
         },

@@ -167,7 +167,7 @@ class _PdfWatermarkScreenState extends State<PdfWatermarkScreen> {
                     }
                   },
                 ),
-              if (!hasFile) const BannerAdWidget(),
+              if (!hasFile) const BannerAdWidget(placement: AdPlacement.tools),
             ],
           ),
         );
