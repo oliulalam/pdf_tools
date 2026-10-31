@@ -964,94 +964,115 @@ class _RecentFileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final file = File(path);
-    final name = path.split(Platform.pathSeparator).last;
-
-    // Attempt to get file metadata safely
-    String metadataText = "Unknown format";
-    try {
-      if (file.existsSync()) {
-        final stat = file.statSync();
-        final date = DateFormat('MMM d, yyyy').format(stat.modified);
-        final sizeMb = (stat.size / (1024 * 1024)).toStringAsFixed(1);
-        final extension = name.split('.').last.toUpperCase();
-        metadataText = "$extension • $sizeMb MB • $date";
-      }
-    } catch (e) {
-      metadataText = "Local Document";
+    final rawName = path.split(Platform.pathSeparator).last;
+    
+    // Format display name
+    String displayName = rawName;
+    if (!displayName.toLowerCase().contains('.')) {
+      displayName = "Document_$rawName.pdf";
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.dividerColor.withAlpha(isDark ? 50 : 20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 40 : 5),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
+    return FutureBuilder<FileStat>(
+      future: file.stat(),
+      builder: (context, snapshot) {
+        String metadataText = "PDF Document";
+        
+        if (snapshot.hasData && snapshot.data!.type != FileSystemEntityType.notFound) {
+          final stat = snapshot.data!;
+          final date = DateFormat('dd MMM yyyy, hh:mm a').format(stat.modified);
+          final sizeKb = (stat.size / 1024).toStringAsFixed(1);
+          final sizeMb = (stat.size / (1024 * 1024)).toStringAsFixed(1);
+          final sizeText = stat.size > (1024 * 1024) ? "$sizeMb MB" : "$sizeKb KB";
+          
+          final ext = displayName.contains('.') 
+              ? displayName.split('.').last.toUpperCase() 
+              : "PDF";
+          metadataText = "$ext • $sizeText • $date";
+        } else if (snapshot.connectionState == ConnectionState.done) {
+          metadataText = "PDF Document • Saved locally";
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.blueAccent.withAlpha(20),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.insert_drive_file_rounded,
-            color: Colors.blueAccent,
-          ),
-        ),
-        title: Text(
-          name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            metadataText,
-            style: TextStyle(fontSize: 11, color: theme.hintColor),
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onDelete != null)
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.redAccent,
-                  size: 20,
-                ),
-                onPressed: onDelete,
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.dividerColor.withAlpha(isDark ? 50 : 20),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(isDark ? 40 : 5),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-          ],
-        ),
-        onTap: () {
-          if (file.existsSync()) {
-            OpenFilex.open(path);
-          } else {
-            Fluttertoast.showToast(
-              msg: "File no longer exists",
-              backgroundColor: Colors.red,
-            );
-          }
-        },
-      ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.picture_as_pdf_rounded,
+                  color: Colors.redAccent,
+                ),
+              ),
+              title: Text(
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  metadataText,
+                  style: TextStyle(fontSize: 11, color: theme.hintColor),
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onDelete != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      onPressed: onDelete,
+                    ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                ],
+              ),
+              onTap: () async {
+                final exists = await file.exists();
+                if (context.mounted) {
+                  if (exists) {
+                    OpenFilex.open(path);
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: "File no longer exists on storage.",
+                      backgroundColor: Colors.red,
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -89,7 +89,6 @@ class PdfCompressorScreen extends StatelessWidget {
                       if (hasFile) ...[
                         const SectionHeader(
                           title: "Choose a compression level",
-                          trailingText: "Compare estimates",
                         ),
                         _buildCompressionOption(
                           context: context,

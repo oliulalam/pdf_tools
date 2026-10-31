@@ -145,23 +145,33 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          if (trailingText != null)
-            Text(
-              trailingText!,
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: theme.hintColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
               ),
             ),
+          ),
+          if (trailingText != null) ...[
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                trailingText!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: theme.hintColor,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
