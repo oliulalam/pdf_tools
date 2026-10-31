@@ -100,36 +100,41 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       return const SizedBox.shrink();
     }
     
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     if (!_isLoaded || _bannerAd == null) {
       // Reserve exact height so layout doesn't jump
       return SizedBox(
-        width: _adSize!.width.toDouble(),
-        height: _adSize!.height.toDouble() + 20, // height + ad label space
+        width: double.infinity,
+        height: _adSize!.height.toDouble() + 30 + (bottomPadding > 0 ? bottomPadding : 8), // height + ad label space
       );
     }
 
     return Container(
       width: double.infinity,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.only(
+        top: 8,
+        bottom: bottomPadding > 0 ? bottomPadding : 8,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 8), // Provide minimum spacing from interactive elements
           Text(
             "Advertisement",
             style: TextStyle(
-              color: Theme.of(context).hintColor.withAlpha(150),
+              color: Theme.of(context).hintColor.withAlpha(180),
               fontSize: 10,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8), // Increased spacing so test ad badge doesn't overlap
           SizedBox(
             width: _bannerAd!.size.width.toDouble(),
             height: _bannerAd!.size.height.toDouble(),
             child: AdWidget(ad: _bannerAd!),
           ),
-          const SizedBox(height: 8), // Provide minimum spacing from interactive elements
         ],
       ),
     );
