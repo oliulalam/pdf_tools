@@ -49,10 +49,8 @@ class AdHelper {
   static int _loadRetryCount = 0;
   static DateTime? _interstitialLoadTime;
 
-  static int _clickCount = 0;
   static DateTime? _lastAdTime;
-  static const int _adIntervalClicks = 3; 
-  static const int _adIntervalSeconds = 180; // 3 minutes gap
+  static const int _adIntervalSeconds = 60; // 60 seconds cooldown gap
 
   // ValueNotifier to trigger banner ads when consent is obtained
   static final ValueNotifier<bool> adsReady = ValueNotifier(false);
@@ -208,10 +206,7 @@ class AdHelper {
   }
 
   static Future<void> showInterstitialAd(void Function() onAdDismissed) async {
-    _clickCount++;
-    debugPrint(
-      "AdHelper: showInterstitialAd requested. Total Actions: $_clickCount",
-    );
+    debugPrint("AdHelper: showInterstitialAd requested.");
 
     bool shouldShowAd = false;
 
@@ -220,24 +215,20 @@ class AdHelper {
       shouldShowAd = true;
       debugPrint("AdHelper: Debug mode - Allowing interstitial ad for testing.");
     } else {
-      // Policy Check in release mode: Clicks and Interval Seconds
-      if (_clickCount >= _adIntervalClicks) {
-        if (_lastAdTime == null) {
-          shouldShowAd = true;
-          debugPrint("AdHelper: First ad session.");
-        } else {
-          final elapsed = DateTime.now().difference(_lastAdTime!).inSeconds;
-          debugPrint("AdHelper: Time since last ad: $elapsed seconds.");
-          if (elapsed >= _adIntervalSeconds) {
-            shouldShowAd = true;
-          }
-        }
+      // 60-second cooldown check in release mode
+      if (_lastAdTime == null) {
+        shouldShowAd = true;
+        debugPrint("AdHelper: First ad session.");
+      } else if (DateTime.now().difference(_lastAdTime!).inSeconds >= _adIntervalSeconds) {
+        shouldShowAd = true;
+      } else {
+        shouldShowAd = false;
       }
     }
 
     if (!shouldShowAd) {
       debugPrint(
-        "AdHelper: Policy - Skipping ad. Reason: Either interval not reached or clicks count too low.",
+        "AdHelper: Cooldown active - Skipping ad. Action continues.",
       );
       // Request app review ONLY if ad is NOT shown
       ReviewHelper.incrementActionAndRequestReview();
@@ -270,7 +261,6 @@ class AdHelper {
     }
 
     debugPrint("AdHelper: Ad is ready. Showing now.");
-    _clickCount = 0;
     _lastAdTime = DateTime.now();
 
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
