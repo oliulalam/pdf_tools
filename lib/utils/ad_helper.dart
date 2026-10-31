@@ -187,16 +187,22 @@ class AdHelper {
 
     bool shouldShowAd = false;
 
-    // Policy Check: Clicks and Interval Seconds
-    if (_clickCount >= _adIntervalClicks) {
-      if (_lastAdTime == null) {
-        shouldShowAd = true;
-        debugPrint("AdHelper: First ad session.");
-      } else {
-        final elapsed = DateTime.now().difference(_lastAdTime!).inSeconds;
-        debugPrint("AdHelper: Time since last ad: $elapsed seconds.");
-        if (elapsed >= _adIntervalSeconds) {
+    if (kDebugMode) {
+      // In debug mode, allow testing the ad immediately on every action
+      shouldShowAd = true;
+      debugPrint("AdHelper: Debug mode - Allowing interstitial ad for testing.");
+    } else {
+      // Policy Check in release mode: Clicks and Interval Seconds
+      if (_clickCount >= _adIntervalClicks) {
+        if (_lastAdTime == null) {
           shouldShowAd = true;
+          debugPrint("AdHelper: First ad session.");
+        } else {
+          final elapsed = DateTime.now().difference(_lastAdTime!).inSeconds;
+          debugPrint("AdHelper: Time since last ad: $elapsed seconds.");
+          if (elapsed >= _adIntervalSeconds) {
+            shouldShowAd = true;
+          }
         }
       }
     }
