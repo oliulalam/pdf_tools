@@ -55,6 +55,32 @@ class AdHelper {
   // ValueNotifier to trigger banner ads when consent is obtained
   static final ValueNotifier<bool> adsReady = ValueNotifier(false);
 
+  static Future<void> waitUntilAdsReady({
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    if (adsReady.value) return;
+
+    final completer = Completer<void>();
+    void listener() {
+      if (adsReady.value && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
+
+    adsReady.addListener(listener);
+
+    try {
+      await completer.future.timeout(
+        timeout,
+        onTimeout: () {
+          debugPrint("AdHelper: waitUntilAdsReady timed out.");
+        },
+      );
+    } finally {
+      adsReady.removeListener(listener);
+    }
+  }
+
   static Future<void> initializeMobileAdsAndConsent() async {
     final params = ConsentRequestParameters();
     
@@ -100,6 +126,8 @@ class AdHelper {
     VoidCallback? onAdLoaded,
     VoidCallback? onAdFailed,
   }) async {
+    await waitUntilAdsReady();
+
     final canRequest = await ConsentInformation.instance.canRequestAds();
     if ((!canRequest && !kDebugMode) || (!kDebugMode && interstitialAdUnitId == 'REPLACE_ME')) {
       onAdFailed?.call();
