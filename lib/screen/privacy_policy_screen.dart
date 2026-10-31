@@ -100,12 +100,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               "1. Information Collection and Use",
-              "PDF Quant: Editor & Manager is designed to prioritize your privacy by processing your files locally on your device. All core file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, PDF-to-Excel conversion, and Document Scanning — are performed locally.\n\n"
+              "PDF Quant: Editor & Manager is designed to prioritize your privacy by processing your files locally on your device. All core file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, PDF-to-Excel conversion, Document Scanning, PDF Organize (page rotate/reorder), PDF Watermark (adding text watermark and page numbers), PDF Lock/Unlock (password protection), and PDF Presenter (full-screen viewing mode) — are performed locally.\n\n"
                   "We do not upload your files or personal documents to any server. The information the app stores, entirely on your own device, includes:\n\n"
                   "• App settings (Light/Dark mode theme preferences) stored locally via 'shared_preferences'\n"
                   "• Recent Documents History: the names and file paths of PDFs you create or modify, stored locally so you can find them again in the app. This list never leaves your device and can be cleared at any time (see Section 12).\n"
                   "• Ad-related identifiers collected by Google AdMob (see Section 4)\n\n"
                   "Document Scanner & Text Recognition (OCR): To convert physical documents to PDF and extract text for Word or Excel files, we use Google ML Kit Document Scanner and Text Recognition. These Machine Learning models run locally on your device. Your documents are NEVER sent to the cloud for text extraction.\n\n"
+                  "PDF Password Protection: When you use the Lock PDF feature, you create a password that is applied directly to your PDF file using on-device encryption. We never see, store, or transmit this password — it exists only within the file you create and on your own device. If you forget this password, we cannot recover it for you.\n\n"
                   "Photo/Image Access: When you use the Image to PDF feature, the app uses 'image_picker' to let you select photos from your device gallery. These images are processed entirely on your device and are NEVER uploaded, transmitted, or stored by us.\n\n"
                   "We do NOT upload, transmit, or have remote access to:\n"
                   "• Your PDF file contents\n"
@@ -132,6 +133,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   "• File Selection & Storage: We use the system-managed file picker to allow you to select PDF files and images from your device for processing. This permission is used strictly to read the files you choose and to save the final results back to your device's storage. On older Android devices (API 29 and below), we may request 'WRITE_EXTERNAL_STORAGE' to ensure files can be saved correctly; this permission is not requested on modern Android versions.\n"
                   "• Image Selection: We use 'image_picker' for converting photos to PDF. These images are processed locally and are never transmitted beyond your device.\n"
                   "• Camera Access: The app may request camera access through Google ML Kit Document Scanner for you to scan physical documents directly into PDF format.\n"
+                  "• Keep Screen Awake (Wake Lock): When using the Presenter feature with 'Keep screen awake' enabled, the app temporarily prevents your device from sleeping, using the WAKE_LOCK permission. This does not access any personal data.\n"
                   "• Internet Access & Advertising ID (AD_ID): Required for Google AdMob to display advertisements and for the UMP consent management platform. The Advertising ID can be reset or opted out of via Android Settings → Google → Ads.\n\n"
                   "Note: On Android 13+ devices, the app uses the official System Photo Picker, which ensures we do not have broad access to your media library — only to the specific photos you select. On older devices, we use the Storage Access Framework (SAF), which also restricts app access to only the files you explicitly pick.",
             ),
