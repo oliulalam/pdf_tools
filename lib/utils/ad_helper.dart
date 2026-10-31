@@ -238,16 +238,14 @@ class AdHelper {
 
     bool shouldShowAd = false;
 
-    if (kDebugMode) {
-      // In debug mode, allow testing the ad immediately on every action
+    // 60-second cooldown check (applies in both debug and release modes)
+    if (_lastAdTime == null) {
       shouldShowAd = true;
-      debugPrint("AdHelper: Debug mode - Allowing interstitial ad for testing.");
+      debugPrint("AdHelper: First ad session.");
     } else {
-      // 60-second cooldown check in release mode
-      if (_lastAdTime == null) {
-        shouldShowAd = true;
-        debugPrint("AdHelper: First ad session.");
-      } else if (DateTime.now().difference(_lastAdTime!).inSeconds >= _adIntervalSeconds) {
+      final elapsed = DateTime.now().difference(_lastAdTime!).inSeconds;
+      debugPrint("AdHelper: Time elapsed since last ad: $elapsed seconds.");
+      if (elapsed >= _adIntervalSeconds) {
         shouldShowAd = true;
       } else {
         shouldShowAd = false;
@@ -256,7 +254,7 @@ class AdHelper {
 
     if (!shouldShowAd) {
       debugPrint(
-        "AdHelper: Cooldown active - Skipping ad. Action continues.",
+        "AdHelper: Cooldown active (${DateTime.now().difference(_lastAdTime!).inSeconds}s < 60s) - Skipping ad.",
       );
       // Request app review ONLY if ad is NOT shown
       ReviewHelper.incrementActionAndRequestReview();
