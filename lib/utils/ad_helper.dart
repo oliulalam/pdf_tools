@@ -79,10 +79,9 @@ class AdHelper {
 
   static Future<void> _initializeAdsIfReady() async {
     final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (canRequest) {
+    if (canRequest || kDebugMode) {
       if (kDebugMode) {
-        // Register test device IDs here if testing on physical device
-        final requestConfiguration = RequestConfiguration(testDeviceIds: []); // paste your device id here
+        final requestConfiguration = RequestConfiguration(testDeviceIds: []);
         MobileAds.instance.updateRequestConfiguration(requestConfiguration);
       }
       await MobileAds.instance.initialize();
@@ -93,27 +92,7 @@ class AdHelper {
 
   static Future<void> preLoadAds() async {
     debugPrint("AdHelper: Pre-loading Interstitial Ad...");
-    final completer = Completer<void>();
-
-    // Attempt to load and wait for it
-    unawaited(loadInterstitialAd(
-      onAdLoaded: () {
-        if (!completer.isCompleted) completer.complete();
-      },
-      onAdFailed: () {
-        if (!completer.isCompleted) completer.complete();
-      },
-    ));
-
-    // Wait for the ad to load OR max 3 seconds to not hold splash too long
-    await completer.future.timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        debugPrint(
-          "AdHelper: Pre-load wait timeout. Ad will load in background.",
-        );
-      },
-    );
+    await loadInterstitialAd();
   }
 
   static Future<void> loadInterstitialAd({
@@ -121,13 +100,28 @@ class AdHelper {
     VoidCallback? onAdFailed,
   }) async {
     final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (!canRequest || (!kDebugMode && interstitialAdUnitId == 'REPLACE_ME')) {
+    if ((!canRequest && !kDebugMode) || (!kDebugMode && interstitialAdUnitId == 'REPLACE_ME')) {
       onAdFailed?.call();
       return;
     }
 
-    if (_isInterstitialAdLoading || _interstitialAd != null) {
-      debugPrint("AdHelper: Ad already loading or loaded.");
+    if (_isInterstitialAdLoading) {
+      debugPrint("AdHelper: Ad is currently loading, waiting...");
+      int waitMs = 0;
+      while (_isInterstitialAdLoading && waitMs < 5000) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        waitMs += 200;
+      }
+      if (_interstitialAd != null) {
+        onAdLoaded?.call();
+      } else {
+        onAdFailed?.call();
+      }
+      return;
+    }
+
+    if (_interstitialAd != null) {
+      debugPrint("AdHelper: Ad already loaded.");
       onAdLoaded?.call();
       return;
     }
@@ -136,6 +130,8 @@ class AdHelper {
     debugPrint(
       "AdHelper: Loading Interstitial Ad (Attempt ${_loadRetryCount + 1})...",
     );
+
+    final completer = Completer<void>();
 
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
@@ -148,6 +144,7 @@ class AdHelper {
           _isInterstitialAdLoading = false;
           _loadRetryCount = 0;
           onAdLoaded?.call();
+          if (!completer.isCompleted) completer.complete();
         },
         onAdFailedToLoad: (err) {
           debugPrint(
@@ -174,12 +171,15 @@ class AdHelper {
           );
 
           onAdFailed?.call();
+          if (!completer.isCompleted) completer.complete();
         },
       ),
     );
+
+    await completer.future;
   }
 
-  static void showInterstitialAd(void Function() onAdDismissed) {
+  static Future<void> showInterstitialAd(void Function() onAdDismissed) async {
     _clickCount++;
     debugPrint(
       "AdHelper: showInterstitialAd requested. Total Actions: $_clickCount",
@@ -224,6 +224,12 @@ class AdHelper {
         _interstitialAd!.dispose();
         _interstitialAd = null;
       }
+    }
+
+    // If ad is not preloaded, attempt to load it on-demand now!
+    if (_interstitialAd == null) {
+      debugPrint("AdHelper: Ad not preloaded yet. Attempting to load on-demand now...");
+      await loadInterstitialAd();
     }
 
     if (_interstitialAd == null) {
