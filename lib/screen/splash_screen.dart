@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf_toolkit/screen/home_screen.dart';
@@ -22,13 +23,13 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _startApp() async {
+    // Start preloading ads in background so it never blocks splash screen
+    unawaited(AdHelper.preLoadAds());
+
     final prefs = await SharedPreferences.getInstance();
     final bool hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
-    await Future.wait([
-      AdHelper.preLoadAds(),
-      Future.delayed(const Duration(seconds: 2)), // Flutter Splash Duration: 2s
-    ]);
+    await Future.delayed(const Duration(seconds: 2)); // Fixed splash delay
 
     if (mounted) {
       if (hasSeenOnboarding) {
