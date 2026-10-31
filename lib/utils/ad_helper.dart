@@ -45,6 +45,7 @@ class AdHelper {
 
   static InterstitialAd? _interstitialAd;
   static bool _isInterstitialAdLoading = false;
+  static DateTime? _loadingStartTime;
   static int _loadRetryCount = 0;
   static DateTime? _interstitialLoadTime;
 
@@ -107,10 +108,24 @@ class AdHelper {
       return;
     }
 
+    if (_interstitialAd != null) {
+      debugPrint("AdHelper: Interstitial Ad already loaded.");
+      onAdLoaded?.call();
+      return;
+    }
+
+    // Reset lock if previous load attempt got stuck for over 10 seconds
+    if (_isInterstitialAdLoading && _loadingStartTime != null) {
+      if (DateTime.now().difference(_loadingStartTime!).inSeconds > 10) {
+        debugPrint("AdHelper: Previous load attempt timed out. Resetting lock.");
+        _isInterstitialAdLoading = false;
+      }
+    }
+
     if (_isInterstitialAdLoading) {
       debugPrint("AdHelper: Ad is currently loading, waiting...");
       int waitMs = 0;
-      while (_isInterstitialAdLoading && waitMs < 5000) {
+      while (_isInterstitialAdLoading && waitMs < 6000) {
         await Future.delayed(const Duration(milliseconds: 200));
         waitMs += 200;
       }
@@ -122,63 +137,74 @@ class AdHelper {
       return;
     }
 
-    if (_interstitialAd != null) {
-      debugPrint("AdHelper: Ad already loaded.");
-      onAdLoaded?.call();
-      return;
-    }
-
     _isInterstitialAdLoading = true;
+    _loadingStartTime = DateTime.now();
     debugPrint(
       "AdHelper: Loading Interstitial Ad (Attempt ${_loadRetryCount + 1})...",
     );
 
     final completer = Completer<void>();
 
-    InterstitialAd.load(
-      adUnitId: interstitialAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          debugPrint("AdHelper: Interstitial Ad loaded successfully.");
-          _interstitialAd = ad;
-          _interstitialLoadTime = DateTime.now();
-          _isInterstitialAdLoading = false;
-          _loadRetryCount = 0;
-          onAdLoaded?.call();
-          if (!completer.isCompleted) completer.complete();
-        },
-        onAdFailedToLoad: (err) {
-          debugPrint(
-            "AdHelper: Interstitial Ad failed to load: ${err.message}",
-          );
-          _isInterstitialAdLoading = false;
-          _interstitialAd = null;
+    try {
+      InterstitialAd.load(
+        adUnitId: interstitialAdUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            debugPrint("AdHelper: Interstitial Ad loaded successfully.");
+            _interstitialAd = ad;
+            _interstitialLoadTime = DateTime.now();
+            _isInterstitialAdLoading = false;
+            _loadingStartTime = null;
+            _loadRetryCount = 0;
+            onAdLoaded?.call();
+            if (!completer.isCompleted) completer.complete();
+          },
+          onAdFailedToLoad: (err) {
+            debugPrint(
+              "AdHelper: Interstitial Ad failed to load: ${err.message}",
+            );
+            _isInterstitialAdLoading = false;
+            _loadingStartTime = null;
+            _interstitialAd = null;
 
-          // Exponential backoff retry: 10s, 30s, 60s, then 5m
-          _loadRetryCount++;
-          int delay = 10;
-          if (_loadRetryCount == 2) {
-            delay = 30;
-          } else if (_loadRetryCount == 3) {
-            delay = 60;
-          } else if (_loadRetryCount > 3) {
-            delay = 300;
-          }
-          
-          debugPrint("AdHelper: Retrying in $delay seconds...");
-          Future.delayed(
-            Duration(seconds: delay),
-            () => loadInterstitialAd(),
-          );
+            // Exponential backoff retry: 10s, 30s, 60s, then 5m
+            _loadRetryCount++;
+            int delay = 10;
+            if (_loadRetryCount == 2) {
+              delay = 30;
+            } else if (_loadRetryCount == 3) {
+              delay = 60;
+            } else if (_loadRetryCount > 3) {
+              delay = 300;
+            }
+            
+            debugPrint("AdHelper: Retrying in $delay seconds...");
+            Future.delayed(
+              Duration(seconds: delay),
+              () => loadInterstitialAd(),
+            );
 
-          onAdFailed?.call();
-          if (!completer.isCompleted) completer.complete();
-        },
-      ),
+            onAdFailed?.call();
+            if (!completer.isCompleted) completer.complete();
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint("AdHelper: Exception in InterstitialAd.load: $e");
+      _isInterstitialAdLoading = false;
+      _loadingStartTime = null;
+      if (!completer.isCompleted) completer.complete();
+    }
+
+    await completer.future.timeout(
+      const Duration(seconds: 8),
+      onTimeout: () {
+        debugPrint("AdHelper: InterstitialAd.load timeout.");
+        _isInterstitialAdLoading = false;
+        _loadingStartTime = null;
+      },
     );
-
-    await completer.future;
   }
 
   static Future<void> showInterstitialAd(void Function() onAdDismissed) async {
