@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf_toolkit/utils/review_helper.dart';
 
 class AdHelper {
@@ -11,7 +10,6 @@ class AdHelper {
   static const String _prodBannerTools = 'REPLACE_ME';
   static const String _prodInterstitial = 'REPLACE_ME';
   static const String _prodRewarded = 'REPLACE_ME';
-  static const String _prodAppOpen = 'REPLACE_ME';
 
   static String get bannerHomeAdUnitId {
     if (Platform.isAndroid) {
@@ -51,16 +49,6 @@ class AdHelper {
     throw UnsupportedError('Unsupported platform');
   }
 
-  static String get appOpenAdUnitId {
-    if (Platform.isAndroid) {
-      return kDebugMode ? 'ca-app-pub-3940256099942544/9257395921' : _prodAppOpen;
-    }
-    throw UnsupportedError('Unsupported platform');
-  }
-
-  static AppOpenAd? _appOpenAd;
-  static bool _isAppOpenAdLoading = false;
-  static DateTime? _appOpenLoadTime;
   static bool isFullScreenShowing = false;
 
   static InterstitialAd? _interstitialAd;
@@ -112,7 +100,6 @@ class AdHelper {
       await MobileAds.instance.initialize();
       adsReady.value = true;
       unawaited(loadInterstitialAd());
-      unawaited(loadRewardedAd());
     }
   }
 
@@ -347,14 +334,12 @@ class AdHelper {
         isFullScreenShowing = false;
         ad.dispose();
         _rewardedAd = null;
-        unawaited(loadRewardedAd());
       },
       onAdFailedToShowFullScreenContent: (ad, err) {
         isFullScreenShowing = false;
         ad.dispose();
         _rewardedAd = null;
         onUnavailable?.call();
-        unawaited(loadRewardedAd());
       },
     );
 
@@ -362,103 +347,5 @@ class AdHelper {
       onReward();
     });
     _rewardedAd = null;
-  }
-
-  static Future<void> loadAppOpenAd() async {
-    final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (!canRequest || (!kDebugMode && appOpenAdUnitId == 'REPLACE_ME')) {
-      return;
-    }
-
-    if (_isAppOpenAdLoading || _appOpenAd != null) {
-      return;
-    }
-
-    _isAppOpenAdLoading = true;
-    AppOpenAd.load(
-      adUnitId: appOpenAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: AppOpenAdLoadCallback(
-        onAdLoaded: (ad) {
-          debugPrint("AdHelper: App Open Ad loaded successfully.");
-          _appOpenAd = ad;
-          _appOpenLoadTime = DateTime.now();
-          _isAppOpenAdLoading = false;
-        },
-        onAdFailedToLoad: (error) {
-          debugPrint("AdHelper: App Open Ad failed to load: ${error.message}");
-          _isAppOpenAdLoading = false;
-          _appOpenAd = null;
-        },
-      ),
-    );
-  }
-
-  static Future<void> showAppOpenAdIfAvailable() async {
-    if (isFullScreenShowing) {
-      debugPrint("AdHelper: App Open Ad skipped because another full screen UI is active.");
-      return;
-    }
-
-    final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (!canRequest) return;
-
-    // Check expiry (4 hours)
-    if (_appOpenAd != null && _appOpenLoadTime != null) {
-      if (DateTime.now().difference(_appOpenLoadTime!).inHours >= 4) {
-        _appOpenAd!.dispose();
-        _appOpenAd = null;
-      }
-    }
-
-    if (_appOpenAd == null) {
-      unawaited(loadAppOpenAd());
-      return;
-    }
-
-    // Rate limiting: at most once per 4 hours and at most 3 per day
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    final lastShowMillis = prefs.getInt('app_open_last_show_time') ?? 0;
-    final todayCount = prefs.getInt('app_open_today_count') ?? 0;
-    final todayDate = prefs.getString('app_open_today_date') ?? '';
-
-    final todayStr = "${now.year}-${now.month}-${now.day}";
-    int currentDailyCount = (todayDate == todayStr) ? todayCount : 0;
-
-    if (now.millisecondsSinceEpoch - lastShowMillis < 4 * 3600 * 1000) {
-      debugPrint("AdHelper: App Open Ad rate limited (less than 4 hours).");
-      return;
-    }
-
-    if (currentDailyCount >= 3) {
-      debugPrint("AdHelper: App Open Ad rate limited (daily limit 3 reached).");
-      return;
-    }
-
-    _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) {
-        isFullScreenShowing = true;
-      },
-      onAdDismissedFullScreenContent: (ad) {
-        isFullScreenShowing = false;
-        ad.dispose();
-        _appOpenAd = null;
-        unawaited(loadAppOpenAd());
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        isFullScreenShowing = false;
-        ad.dispose();
-        _appOpenAd = null;
-        unawaited(loadAppOpenAd());
-      },
-    );
-
-    await prefs.setInt('app_open_last_show_time', now.millisecondsSinceEpoch);
-    await prefs.setString('app_open_today_date', todayStr);
-    await prefs.setInt('app_open_today_count', currentDailyCount + 1);
-
-    _appOpenAd!.show();
-    _appOpenAd = null;
   }
 }

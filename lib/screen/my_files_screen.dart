@@ -98,6 +98,10 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
               onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             ),
           ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: BannerAdWidget(placement: AdPlacement.recent),
+          ),
           Expanded(
             child: Consumer<FileHistoryProvider>(
               builder: (context, provider, child) {
@@ -148,28 +152,16 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                 });
 
                 if (displayedFiles.isEmpty) {
-                  return const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("No files match your search"),
-                      SizedBox(height: 24),
-                      BannerAdWidget(placement: AdPlacement.recent),
-                    ],
+                  return const Center(
+                    child: Text("No files match your search"),
                   );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
-                  itemCount: displayedFiles.length + 1, // Add 1 for banner ad at top
+                  itemCount: displayedFiles.length,
                   itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return const Padding(
-                        padding: EdgeInsets.only(bottom: 16.0),
-                        child: BannerAdWidget(placement: AdPlacement.recent),
-                      );
-                    }
-                    
-                    final path = displayedFiles[index - 1];
+                    final path = displayedFiles[index];
                     return _FileItemCard(
                       path: path,
                       theme: theme,

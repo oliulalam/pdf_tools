@@ -22,7 +22,6 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:pdf_toolkit/screen/pdf_viewer_screen/pdf_viewer_screen.dart';
 import 'package:path/path.dart' as p;
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf_toolkit/utils/ad_helper.dart';
 import 'dart:async';
 
 class PdfToolKitApp extends StatefulWidget {
@@ -52,13 +51,12 @@ class PdfToolKitApp extends StatefulWidget {
   }
 }
 
-class _PdfToolKitAppState extends State<PdfToolKitApp> with WidgetsBindingObserver {
+class _PdfToolKitAppState extends State<PdfToolKitApp> {
   late StreamSubscription _intentDataStreamSubscription;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     
     // Clear any FilePicker temp files on startup to free up space
     FilePicker.clearTemporaryFiles().catchError((e) {
@@ -80,16 +78,7 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> with WidgetsBindingObserv
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Show App Open Ad only when resuming from background
-      AdHelper.showAppOpenAdIfAvailable();
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _intentDataStreamSubscription.cancel();
     super.dispose();
   }
