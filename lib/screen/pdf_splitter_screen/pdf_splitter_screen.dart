@@ -352,16 +352,19 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          provider.statusMessage,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.hintColor,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            provider.statusMessage,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.hintColor,
+                            ),
                           ),
                         ),
                       ],
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),

@@ -228,9 +228,11 @@ class _SelectedImagesScreenState extends State<SelectedImagesScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Center(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Text(
                             "Generating PDF...",
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               color: theme.hintColor,
                               fontSize: 12,
@@ -238,7 +240,7 @@ class _SelectedImagesScreenState extends State<SelectedImagesScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),

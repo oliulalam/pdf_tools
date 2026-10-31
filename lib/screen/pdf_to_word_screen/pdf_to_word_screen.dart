@@ -380,10 +380,13 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                provider.statusMessage ?? "Processing...",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: theme.hintColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  provider.statusMessage ?? "Processing...",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: theme.hintColor),
+                ),
               ),
               const SizedBox(height: 16),
               Center(
@@ -396,7 +399,7 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 40),
+            const SizedBox(height: 100),
             if (!provider.isLoading)
               BottomActionBar(
                 actionText: "Extract Text",

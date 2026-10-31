@@ -138,13 +138,17 @@ class _PdfWatermarkScreenState extends State<PdfWatermarkScreen> {
                             child: LinearProgressIndicator(color: Colors.blueGrey),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            provider.statusMessage ?? "Processing...",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: theme.hintColor),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              provider.statusMessage ?? "Processing...",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 12, color: theme.hintColor),
+                            ),
                           ),
                         ],
-                      ]
+                      ],
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),

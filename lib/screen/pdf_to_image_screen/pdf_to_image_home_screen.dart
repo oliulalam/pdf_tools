@@ -277,7 +277,8 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Center(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Text(
                             provider.statusMessage.isNotEmpty
                                 ? provider.statusMessage
@@ -335,7 +336,7 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),

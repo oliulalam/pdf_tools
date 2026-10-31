@@ -143,11 +143,24 @@ class _PdfOrganizeScreenState extends State<PdfOrganizeScreen> {
                           ),
                         ),
                       if (provider.isLoading && provider.pages.isNotEmpty) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           child: LinearProgressIndicator(color: Colors.amber),
                         ),
+                        if (provider.statusMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              provider.statusMessage!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.hintColor,
+                              ),
+                            ),
+                          ),
                       ],
+                      const SizedBox(height: 100),
                     ]
                   ],
                 ),

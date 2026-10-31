@@ -136,24 +136,27 @@ class PdfCompressorScreen extends StatelessWidget {
 
                         if (provider.isLoading) ...[
                           const SizedBox(height: 24),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
                             child: LinearProgressIndicator(
                               color: Colors.deepPurpleAccent,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            provider.statusMessage ?? "Compressing...",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.hintColor,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              provider.statusMessage ?? "Compressing...",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.hintColor,
+                              ),
                             ),
                           ),
                         ],
                       ],
-                      const SizedBox(height: 40), // Bottom padding
+                      const SizedBox(height: 100), // Adequate bottom padding for BottomActionBar
                     ],
                   ),
                 ),
