@@ -9,7 +9,6 @@ class AdHelper {
   static const String _prodBannerRecent = 'REPLACE_ME';
   static const String _prodBannerTools = 'REPLACE_ME';
   static const String _prodInterstitial = 'REPLACE_ME';
-  static const String _prodRewarded = 'REPLACE_ME';
 
   static String get bannerHomeAdUnitId {
     if (Platform.isAndroid) {
@@ -42,23 +41,12 @@ class AdHelper {
     throw UnsupportedError('Unsupported platform');
   }
 
-  static String get rewardedAdUnitId {
-    if (Platform.isAndroid) {
-      return kDebugMode ? 'ca-app-pub-3940256099942544/5224354917' : _prodRewarded;
-    }
-    throw UnsupportedError('Unsupported platform');
-  }
-
   static bool isFullScreenShowing = false;
 
   static InterstitialAd? _interstitialAd;
   static bool _isInterstitialAdLoading = false;
   static int _loadRetryCount = 0;
   static DateTime? _interstitialLoadTime;
-
-  static RewardedAd? _rewardedAd;
-  static bool _isRewardedAdLoading = false;
-  static DateTime? _rewardedLoadTime;
 
   static int _clickCount = 0;
   static DateTime? _lastAdTime;
@@ -276,76 +264,5 @@ class AdHelper {
       unawaited(loadInterstitialAd());
       onAdDismissed();
     }
-  }
-
-  static Future<void> loadRewardedAd() async {
-    final canRequest = await ConsentInformation.instance.canRequestAds();
-    if (!canRequest || (!kDebugMode && rewardedAdUnitId == 'REPLACE_ME')) {
-      return;
-    }
-
-    if (_isRewardedAdLoading || _rewardedAd != null) {
-      return;
-    }
-
-    _isRewardedAdLoading = true;
-    RewardedAd.load(
-      adUnitId: rewardedAdUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          debugPrint("AdHelper: Rewarded Ad loaded successfully.");
-          _rewardedAd = ad;
-          _rewardedLoadTime = DateTime.now();
-          _isRewardedAdLoading = false;
-        },
-        onAdFailedToLoad: (err) {
-          debugPrint("AdHelper: Rewarded Ad failed to load: ${err.message}");
-          _isRewardedAdLoading = false;
-          _rewardedAd = null;
-        },
-      ),
-    );
-  }
-
-  static void showRewardedAd({
-    required VoidCallback onReward,
-    VoidCallback? onUnavailable,
-  }) {
-    // Check expiry (55 minutes)
-    if (_rewardedAd != null && _rewardedLoadTime != null) {
-      if (DateTime.now().difference(_rewardedLoadTime!).inMinutes > 55) {
-        _rewardedAd!.dispose();
-        _rewardedAd = null;
-      }
-    }
-
-    if (_rewardedAd == null) {
-      onUnavailable?.call();
-      unawaited(loadRewardedAd());
-      return;
-    }
-
-    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) {
-        isFullScreenShowing = true;
-      },
-      onAdDismissedFullScreenContent: (ad) {
-        isFullScreenShowing = false;
-        ad.dispose();
-        _rewardedAd = null;
-      },
-      onAdFailedToShowFullScreenContent: (ad, err) {
-        isFullScreenShowing = false;
-        ad.dispose();
-        _rewardedAd = null;
-        onUnavailable?.call();
-      },
-    );
-
-    _rewardedAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-      onReward();
-    });
-    _rewardedAd = null;
   }
 }
