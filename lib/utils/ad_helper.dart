@@ -81,7 +81,9 @@ class AdHelper {
     final canRequest = await ConsentInformation.instance.canRequestAds();
     if (canRequest || kDebugMode) {
       if (kDebugMode) {
-        final requestConfiguration = RequestConfiguration(testDeviceIds: []);
+        final requestConfiguration = RequestConfiguration(
+          testDeviceIds: ["C60E55548632D3DA3550DAC043F61B4C"],
+        );
         MobileAds.instance.updateRequestConfiguration(requestConfiguration);
       }
       await MobileAds.instance.initialize();
