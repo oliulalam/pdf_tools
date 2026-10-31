@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 class FileHistoryProvider extends ChangeNotifier {
@@ -20,8 +21,30 @@ class FileHistoryProvider extends ChangeNotifier {
   }
 
   Future<void> addFile(String path) async {
-    if (!_filePaths.contains(path)) {
-      _filePaths.add(path);
+    String finalPath = path;
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        // If file is in temporary cache, save a permanent copy in App Documents
+        if (path.contains('cache') || path.contains('file_picker')) {
+          final appDir = await getApplicationDocumentsDirectory();
+          final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
+          if (!await docsDir.exists()) {
+            await docsDir.create(recursive: true);
+          }
+          final fileName = path.split(Platform.pathSeparator).last;
+          final permanentPath = '${docsDir.path}/$fileName';
+          final permanentFile = File(permanentPath);
+          await permanentFile.writeAsBytes(await file.readAsBytes());
+          finalPath = permanentPath;
+        }
+      }
+    } catch (e) {
+      debugPrint("Error making permanent copy: $e");
+    }
+
+    if (!_filePaths.contains(finalPath)) {
+      _filePaths.add(finalPath);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_storageKey, _filePaths);
       notifyListeners();

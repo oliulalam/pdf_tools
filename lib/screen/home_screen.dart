@@ -23,6 +23,8 @@ import 'package:pdf_toolkit/provider/pdf_presenter_provider/pdf_presenter_provid
 
 // Screens
 import 'package:pdf_toolkit/screen/image_to_pdf_screen/selected_images_screen.dart';
+import 'package:pdf_toolkit/screen/pdf_viewer_screen/pdf_viewer_screen.dart';
+import 'package:path/path.dart' as p;
 import 'package:pdf_toolkit/screen/pdf_compressor_screen/pdf_compressor_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_merger_screen/pdf_merger_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_page_delete_screen/pdf_page_delete_screen.dart';
@@ -335,9 +337,19 @@ class _HomeTabState extends State<_HomeTab> {
         icon: Icons.document_scanner_rounded,
         color: Colors.blueAccent,
         onTap: () async {
-          final success = await context.read<PdfScannerProvider>().startScan(context);
-          if (success) {
-            AdHelper.showInterstitialAd(() {});
+          final String? scannedPath = await context.read<PdfScannerProvider>().startScan(context);
+          if (scannedPath != null && context.mounted) {
+            AdHelper.showInterstitialAd(() {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PdfViewerScreen(
+                    path: scannedPath,
+                    title: p.basename(scannedPath),
+                  ),
+                ),
+              );
+            });
           }
         },
       ),
