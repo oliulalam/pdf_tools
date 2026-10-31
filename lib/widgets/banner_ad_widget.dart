@@ -99,43 +99,48 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     if (_adSize == null) {
       return const SizedBox.shrink();
     }
-    
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     if (!_isLoaded || _bannerAd == null) {
       // Reserve exact height so layout doesn't jump
-      return SizedBox(
-        width: double.infinity,
-        height: _adSize!.height.toDouble() + 30 + (bottomPadding > 0 ? bottomPadding : 8), // height + ad label space
+      return SafeArea(
+        top: false,
+        bottom: true,
+        minimum: const EdgeInsets.only(bottom: 8.0),
+        child: SizedBox(
+          width: double.infinity,
+          height: _adSize!.height.toDouble() + 30, // height + ad label space
+        ),
       );
     }
 
-    return Container(
-      width: double.infinity,
-      alignment: Alignment.center,
-      padding: EdgeInsets.only(
-        top: 8,
-        bottom: bottomPadding > 0 ? bottomPadding : 8,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "Advertisement",
-            style: TextStyle(
-              color: Theme.of(context).hintColor.withAlpha(180),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
+    return SafeArea(
+      top: false,
+      bottom: true,
+      minimum: const EdgeInsets.only(bottom: 8.0),
+      child: Container(
+        width: double.infinity,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Advertisement",
+              style: TextStyle(
+                color: Theme.of(context).hintColor.withAlpha(180),
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 8), // Increased spacing so test ad badge doesn't overlap
-          SizedBox(
-            width: _bannerAd!.size.width.toDouble(),
-            height: _bannerAd!.size.height.toDouble(),
-            child: AdWidget(ad: _bannerAd!),
-          ),
-        ],
+            const SizedBox(height: 8), // Increased spacing so test ad badge doesn't overlap
+            SizedBox(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            ),
+          ],
+        ),
       ),
     );
   }
