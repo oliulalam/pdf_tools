@@ -25,7 +25,7 @@ class FileHistoryProvider extends ChangeNotifier {
     try {
       final file = File(path);
       if (await file.exists()) {
-        // If file is in temporary cache, save a permanent copy in App Documents
+        // Only save to documents dir if it's currently in cache
         if (path.contains('cache') || path.contains('file_picker')) {
           final appDir = await getApplicationDocumentsDirectory();
           final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
@@ -34,8 +34,12 @@ class FileHistoryProvider extends ChangeNotifier {
           }
           final fileName = path.split(Platform.pathSeparator).last;
           final permanentPath = '${docsDir.path}/$fileName';
+          
+          // Copy only if destination doesn't already exist to prevent overwrites
           final permanentFile = File(permanentPath);
-          await permanentFile.writeAsBytes(await file.readAsBytes());
+          if (!await permanentFile.exists()) {
+            await file.copy(permanentPath);
+          }
           finalPath = permanentPath;
         }
       }
@@ -43,12 +47,13 @@ class FileHistoryProvider extends ChangeNotifier {
       debugPrint("Error making permanent copy: $e");
     }
 
-    if (!_filePaths.contains(finalPath)) {
-      _filePaths.add(finalPath);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_storageKey, _filePaths);
-      notifyListeners();
-    }
+    // Always add finalPath, removing old entry if it existed to bring it to top
+    _filePaths.remove(finalPath);
+    _filePaths.add(finalPath);
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_storageKey, _filePaths);
+    notifyListeners();
   }
 
   Future<void> removeFile(String path) async {
