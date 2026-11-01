@@ -338,18 +338,25 @@ class _HomeTabState extends State<_HomeTab> {
         color: Colors.blueAccent,
         onTap: () async {
           final String? scannedPath = await context.read<PdfScannerProvider>().startScan(context);
-          if (scannedPath != null && context.mounted) {
+          if (!context.mounted) return;
+          
+          if (scannedPath != null) {
             AdHelper.showInterstitialAd(() {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => PdfViewerScreen(
                     path: scannedPath,
-                    title: p.basename(scannedPath),
+                    title: 'Scanned Document',
                   ),
                 ),
               );
             });
+          } else {
+            Fluttertoast.showToast(
+              msg: "Scanning failed or cancelled.",
+              backgroundColor: Colors.red,
+            );
           }
         },
       ),
