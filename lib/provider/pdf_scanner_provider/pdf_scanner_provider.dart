@@ -49,28 +49,10 @@ class PdfScannerProvider extends ChangeNotifier {
 
           // Add to FileHistoryProvider so it shows in Recent Documents
           if (context.mounted) {
-            context.read<FileHistoryProvider>().addFile(permanentPath);
+            await context.read<FileHistoryProvider>().addFile(permanentPath);
           }
 
-          // Offer optional FilePicker export
-          try {
-            final String? userExportPath = await FilePicker.saveFile(
-              dialogTitle: 'Save Scanned PDF',
-              fileName: fileName,
-              type: FileType.custom,
-              allowedExtensions: ['pdf'],
-              bytes: bytes,
-            );
-            if (userExportPath != null && context.mounted) {
-              context.read<FileHistoryProvider>().addFile(userExportPath);
-              _isScanning = false;
-              notifyListeners();
-              return userExportPath;
-            }
-          } catch (e) {
-            debugPrint("Optional export skipped: $e");
-          }
-
+          // Directly return the permanent path so it opens in PdfViewer Screen
           _isScanning = false;
           notifyListeners();
           return permanentPath;
