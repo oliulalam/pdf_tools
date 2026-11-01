@@ -18,7 +18,6 @@ class PdfScannerProvider extends ChangeNotifier {
 
     try {
       final DocumentScannerOptions options = DocumentScannerOptions(
-        documentFormat: DocumentFormat.pdf,
         mode: ScannerMode.filter, // Base mode (allows crop & filter). ML Kit controls auto-capture internally.
         pageLimit: 100,
         isGalleryImport: true,

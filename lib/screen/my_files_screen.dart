@@ -267,12 +267,14 @@ class _FileItemCardState extends State<_FileItemCard> {
         }
 
         return Card(
-          color: widget.theme.cardColor,
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          child: ListTile(
+          clipBehavior: Clip.antiAlias,
+          child: Material(
+            color: widget.theme.cardColor,
+            child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 8,

@@ -1016,7 +1016,6 @@ class _RecentFileCard extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: theme.dividerColor.withAlpha(isDark ? 50 : 20),
@@ -1030,8 +1029,9 @@ class _RecentFileCard extends StatelessWidget {
             ],
           ),
           child: Material(
-            color: Colors.transparent,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Container(
