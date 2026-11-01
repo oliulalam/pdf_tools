@@ -91,7 +91,7 @@ class PdfPageDeleteProvider extends ChangeNotifier {
       notifyListeners();
 
       if (context.mounted) {
-        context.read<FileHistoryProvider>().addFile(path);
+        await context.read<FileHistoryProvider>().addFile(path, bytes: outputBytes);
         await OpenFilex.open(path);
       }
       return true;

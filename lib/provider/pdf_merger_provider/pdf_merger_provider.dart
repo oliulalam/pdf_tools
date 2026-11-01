@@ -138,7 +138,7 @@ class PdfMergerProvider extends ChangeNotifier {
       if (savePath != null) {
         setStatusMessage(null);
         if (context.mounted) {
-          context.read<FileHistoryProvider>().addFile(savePath);
+          await context.read<FileHistoryProvider>().addFile(savePath, bytes: mergedBytes);
           try {
             await OpenFilex.open(savePath);
           } catch (e) {

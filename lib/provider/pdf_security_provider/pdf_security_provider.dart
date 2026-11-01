@@ -87,7 +87,7 @@ class PdfSecurityProvider extends ChangeNotifier {
       notifyListeners();
 
       if (outputPath != null && context.mounted) {
-        context.read<FileHistoryProvider>().addFile(outputPath);
+        await context.read<FileHistoryProvider>().addFile(outputPath, bytes: bytes);
         return true;
       }
       return false;

@@ -151,7 +151,7 @@ class PdfCompressorProvider extends ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(resultMsg)),
         );
-        context.read<FileHistoryProvider>().addFile(outputPath);
+        await context.read<FileHistoryProvider>().addFile(outputPath, bytes: finalBytes);
         await OpenFilex.open(outputPath);
       }
       return true;

@@ -341,16 +341,18 @@ class _HomeTabState extends State<_HomeTab> {
           if (!context.mounted) return;
           
           if (scannedPath != null) {
-            AdHelper.showInterstitialAd(() {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PdfViewerScreen(
-                    path: scannedPath,
-                    title: 'Scanned Document',
-                  ),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PdfViewerScreen(
+                  path: scannedPath,
+                  title: 'Scanned Document',
                 ),
-              );
+              ),
+            ).then((_) {
+              if (context.mounted) {
+                AdHelper.showInterstitialAd(() {});
+              }
             });
           } else {
             Fluttertoast.showToast(

@@ -192,7 +192,7 @@ class PdfToExcelProvider extends ChangeNotifier {
         bytes: Uint8List.fromList(bytes),
       );
 
-      return _handleSaveSuccess(context, outputPath);
+      return _handleSaveSuccess(context, outputPath, Uint8List.fromList(bytes));
     } catch (e) {
       debugPrint("CSV Save Error: $e");
       _isLoading = false;
@@ -202,7 +202,7 @@ class PdfToExcelProvider extends ChangeNotifier {
     }
   }
 
-  bool _handleSaveSuccess(BuildContext context, String? outputPath) {
+  bool _handleSaveSuccess(BuildContext context, String? outputPath, Uint8List bytes) {
     if (outputPath == null) {
       _isLoading = false;
       _statusMessage = "Save cancelled";
@@ -218,7 +218,7 @@ class PdfToExcelProvider extends ChangeNotifier {
       Provider.of<FileHistoryProvider>(
         context,
         listen: false,
-      ).addFile(outputPath);
+      ).addFile(outputPath, bytes: bytes);
       OpenFilex.open(outputPath);
     }
     return true;

@@ -237,7 +237,7 @@ class PdfSplitProvider extends ChangeNotifier {
         );
 
         if (outputPath != null && context.mounted) {
-          context.read<FileHistoryProvider>().addFile(outputPath);
+          await context.read<FileHistoryProvider>().addFile(outputPath, bytes: bytes);
           _setStatus('');
           return true;
         }

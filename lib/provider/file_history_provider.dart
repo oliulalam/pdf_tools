@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class FileHistoryProvider extends ChangeNotifier {
   List<String> _filePaths = [];
   static const String _storageKey = 'created_files_history';
+  
+  late final Future<void> _ready = _loadHistory();
 
   List<String> get filePaths => _filePaths.reversed.toList(); // Newest first
 
   FileHistoryProvider() {
-    _loadHistory();
+    // _ready future is created in declaration
   }
 
   Future<void> _loadHistory() async {
@@ -20,32 +23,46 @@ class FileHistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addFile(String path) async {
-    String finalPath = path;
+  Future<String?> addFile(String path, {Uint8List? bytes}) async {
+    await _ready;
+    String? finalPath;
+
     try {
-      final file = File(path);
-      if (await file.exists()) {
-        // Only save to documents dir if it's currently in cache
-        if (path.contains('cache') || path.contains('file_picker')) {
-          final appDir = await getApplicationDocumentsDirectory();
-          final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
-          if (!await docsDir.exists()) {
-            await docsDir.create(recursive: true);
-          }
-          final fileName = path.split(Platform.pathSeparator).last;
-          final permanentPath = '${docsDir.path}/$fileName';
-          
-          // Copy only if destination doesn't already exist to prevent overwrites
-          final permanentFile = File(permanentPath);
-          if (!await permanentFile.exists()) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
+      if (!await docsDir.exists()) {
+        await docsDir.create(recursive: true);
+      }
+
+      if (bytes != null) {
+        // Write fresh bytes to a new private file
+        final originalName = path.split(Platform.pathSeparator).last;
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
+        final permanentPath = '${docsDir.path}/$fileName';
+        final permanentFile = File(permanentPath);
+        await permanentFile.writeAsBytes(bytes);
+        finalPath = permanentPath;
+      } else {
+        final file = File(path);
+        if (await file.exists()) {
+          if (path.startsWith(docsDir.path)) {
+            // Already inside PDF_Quant_Documents, use as is
+            finalPath = path;
+          } else {
+            // Copy it to PDF_Quant_Documents
+            final originalName = path.split(Platform.pathSeparator).last;
+            final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
+            final permanentPath = '${docsDir.path}/$fileName';
             await file.copy(permanentPath);
+            finalPath = permanentPath;
           }
-          finalPath = permanentPath;
         }
       }
     } catch (e) {
-      debugPrint("Error making permanent copy: $e");
+      debugPrint("Error storing permanent copy: $e");
     }
+
+    if (finalPath == null) return null;
 
     // Always add finalPath, removing old entry if it existed to bring it to top
     _filePaths.remove(finalPath);
@@ -54,16 +71,33 @@ class FileHistoryProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_storageKey, _filePaths);
     notifyListeners();
+    return finalPath;
   }
 
   Future<void> removeFile(String path) async {
+    await _ready;
     _filePaths.remove(path);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_storageKey, _filePaths);
+    
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
+      if (path.startsWith(docsDir.path)) {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error deleting private copy: $e");
+    }
+    
     notifyListeners();
   }
 
   Future<bool> renameFile(String oldPath, String newPath) async {
+    await _ready;
     try {
       final file = File(oldPath);
       if (await file.exists()) {
@@ -99,6 +133,7 @@ class FileHistoryProvider extends ChangeNotifier {
   }
 
   Future<void> clearHistory() async {
+    await _ready;
     _filePaths.clear();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);

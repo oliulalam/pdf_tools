@@ -71,7 +71,7 @@ class _SelectedImagesScreenState extends State<SelectedImagesScreen> {
         });
 
         if (outputPath != null) {
-          context.read<FileHistoryProvider>().addFile(outputPath);
+          await context.read<FileHistoryProvider>().addFile(outputPath, bytes: bytes);
           provider.clearImages();
 
           AdHelper.showInterstitialAd(() {

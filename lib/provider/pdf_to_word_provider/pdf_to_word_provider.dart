@@ -180,10 +180,10 @@ class PdfToWordProvider extends ChangeNotifier {
       notifyListeners();
 
       if (context.mounted) {
-        Provider.of<FileHistoryProvider>(
+        await Provider.of<FileHistoryProvider>(
           context,
           listen: false,
-        ).addFile(outputPath);
+        ).addFile(outputPath, bytes: docxBytes);
         await OpenFilex.open(outputPath);
       }
       return true;

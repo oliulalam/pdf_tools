@@ -4,7 +4,6 @@ import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 
 class PdfScannerProvider extends ChangeNotifier {
   bool _isScanning = false;
@@ -20,7 +19,8 @@ class PdfScannerProvider extends ChangeNotifier {
 
     try {
       final DocumentScannerOptions options = DocumentScannerOptions(
-        mode: ScannerMode.filter, // Manual capture mode (no auto-capture), supports crop, filter & page reorder
+        documentFormat: DocumentFormat.pdf,
+        mode: ScannerMode.filter, // Base mode (allows crop & filter). ML Kit controls auto-capture internally.
         pageLimit: 100,
         isGalleryImport: true,
       );
@@ -36,23 +36,14 @@ class PdfScannerProvider extends ChangeNotifier {
         if (await tempFile.exists()) {
           final bytes = await tempFile.readAsBytes();
           
-          // Save a copy permanently into App Documents directory so it is NEVER deleted by cache cleaners
-          final appDir = await getApplicationDocumentsDirectory();
-          final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
-          if (!await docsDir.exists()) {
-            await docsDir.create(recursive: true);
-          }
-          final fileName = 'Scanned_Doc_${DateTime.now().millisecondsSinceEpoch}.pdf';
-          final permanentPath = '${docsDir.path}/$fileName';
-          final permanentFile = File(permanentPath);
-          await permanentFile.writeAsBytes(bytes);
-
-          // Add to FileHistoryProvider so it shows in Recent Documents
+          String? permanentPath;
           if (context.mounted) {
-            await context.read<FileHistoryProvider>().addFile(permanentPath);
+            permanentPath = await context.read<FileHistoryProvider>().addFile(
+              'Scanned_Doc_${DateTime.now().millisecondsSinceEpoch}.pdf',
+              bytes: bytes,
+            );
           }
 
-          // Directly return the permanent path so it opens in PdfViewer Screen
           _isScanning = false;
           notifyListeners();
           return permanentPath;
