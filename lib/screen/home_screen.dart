@@ -1070,15 +1070,23 @@ class _RecentFileCard extends StatelessWidget {
               ),
               onTap: () async {
                 final exists = await file.exists();
-                if (context.mounted) {
-                  if (exists) {
-                    OpenFilex.open(path);
-                  } else {
-                    Fluttertoast.showToast(
-                      msg: "File no longer exists on storage.",
-                      backgroundColor: Colors.red,
-                    );
-                  }
+                if (!context.mounted) return;
+                if (exists) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PdfViewerScreen(
+                        path: path,
+                        title: displayName,
+                      ),
+                    ),
+                  );
+                } else {
+                  Fluttertoast.showToast(
+                    msg: "File not found. Removing from list.",
+                    backgroundColor: Colors.red,
+                  );
+                  context.read<FileHistoryProvider>().removeFile(path);
                 }
               },
             ),
