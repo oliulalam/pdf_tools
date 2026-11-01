@@ -135,7 +135,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
             ),
             const SizedBox(height: 8), // Increased spacing so test ad badge doesn't overlap
             SizedBox(
-              width: _bannerAd!.size.width.toDouble(),
+              width: double.infinity,
               height: _bannerAd!.size.height.toDouble(),
               child: AdWidget(ad: _bannerAd!),
             ),
