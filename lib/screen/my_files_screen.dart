@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:provider/provider.dart';
@@ -124,7 +123,7 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                     ),
                   );
                 }
-                
+
                 // Filter and sort
                 List<String> displayedFiles = provider.filePaths.where((path) {
                   final name = path.split(Platform.pathSeparator).last.toLowerCase();
@@ -134,17 +133,22 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                 displayedFiles.sort((a, b) {
                   final fileA = File(a);
                   final fileB = File(b);
-                  
-                  if (_sortOption == SortOption.nameAsc || _sortOption == SortOption.nameDesc) {
+
+                  if (_sortOption == SortOption.nameAsc ||
+                      _sortOption == SortOption.nameDesc) {
                     final nameA = a.split(Platform.pathSeparator).last.toLowerCase();
                     final nameB = b.split(Platform.pathSeparator).last.toLowerCase();
-                    return _sortOption == SortOption.nameAsc ? nameA.compareTo(nameB) : nameB.compareTo(nameA);
+                    return _sortOption == SortOption.nameAsc
+                        ? nameA.compareTo(nameB)
+                        : nameB.compareTo(nameA);
                   } else {
                     // Date sort
                     try {
                       final statA = fileA.statSync().modified;
                       final statB = fileB.statSync().modified;
-                      return _sortOption == SortOption.dateDesc ? statB.compareTo(statA) : statA.compareTo(statB);
+                      return _sortOption == SortOption.dateDesc
+                          ? statB.compareTo(statA)
+                          : statA.compareTo(statB);
                     } catch (_) {
                       return 0;
                     }
@@ -194,9 +198,9 @@ class _FileItemCard extends StatefulWidget {
 }
 
 class _FileItemCardState extends State<_FileItemCard> {
-
   void _renameFile(BuildContext context, String currentFileName) {
-    final TextEditingController controller = TextEditingController(text: currentFileName);
+    final TextEditingController controller =
+    TextEditingController(text: currentFileName);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -219,9 +223,14 @@ class _FileItemCardState extends State<_FileItemCard> {
               if (newName.isNotEmpty && newName != currentFileName) {
                 final dir = p.dirname(widget.path);
                 final ext = p.extension(widget.path);
-                final newPath = p.join(dir, newName.endsWith(ext) ? newName : '$newName$ext');
-                
-                final success = await context.read<FileHistoryProvider>().renameFile(widget.path, newPath);
+                final newPath = p.join(
+                  dir,
+                  newName.endsWith(ext) ? newName : '$newName$ext',
+                );
+
+                final success = await context
+                    .read<FileHistoryProvider>()
+                    .renameFile(widget.path, newPath);
                 if (mounted) {
                   if (success) {
                     Navigator.pop(context);
@@ -248,8 +257,7 @@ class _FileItemCardState extends State<_FileItemCard> {
       future: file.stat(),
       builder: (context, snapshot) {
         // Even if file doesn't exist, we handle it gracefully
-        final exists =
-            snapshot.hasData &&
+        final exists = snapshot.hasData &&
             snapshot.data!.type != FileSystemEntityType.notFound;
         if (!exists && snapshot.connectionState == ConnectionState.done) {
           return const SizedBox.shrink();
@@ -260,9 +268,8 @@ class _FileItemCardState extends State<_FileItemCard> {
 
         if (snapshot.hasData) {
           final size = (snapshot.data!.size / 1024).toStringAsFixed(1);
-          final date = DateFormat(
-            'dd MMM yyyy, hh:mm a',
-          ).format(snapshot.data!.modified);
+          final date = DateFormat('dd MMM yyyy, hh:mm a')
+              .format(snapshot.data!.modified);
           subtitle = "$size KB • $date";
         }
 
@@ -275,95 +282,103 @@ class _FileItemCardState extends State<_FileItemCard> {
           child: Material(
             color: widget.theme.cardColor,
             child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            leading: const CircleAvatar(
-              backgroundColor: Colors.orangeAccent,
-              child: Icon(Icons.picture_as_pdf, color: Colors.white),
-            ),
-            title: Text(
-              fileName,
-              style: TextStyle(
-                color: widget.theme.colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: widget.theme.hintColor, fontSize: 12),
+              leading: const CircleAvatar(
+                backgroundColor: Colors.orangeAccent,
+                child: Icon(Icons.picture_as_pdf, color: Colors.white),
+              ),
+              title: Text(
+                fileName,
+                style: TextStyle(
+                  color: widget.theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PdfViewerScreen(
-                    path: widget.path,
-                    title: fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: widget.theme.hintColor,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              );
-            },
-            trailing: PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: widget.theme.hintColor),
-              color: widget.theme.cardColor,
-              onSelected: (value) async {
-                if (value == 'share') {
-                  await SharePlus.instance.share(
-                    ShareParams(files: [XFile(widget.path)]),
-                  );
-                } else if (value == 'rename') {
-                  _renameFile(context, fileName);
-                } else if (value == 'delete') {
-                  widget.onRemove();
-                } else if (value == 'delete_file') {
-                  widget.onRemove();
-                  try {
-                    await file.delete();
-                  } catch (e) {
-                    debugPrint("Failed to delete file from storage: $e");
-                  }
-                }
+                ],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PdfViewerScreen(
+                      path: widget.path,
+                      title: fileName,
+                    ),
+                  ),
+                );
               },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'share',
-                  child: Text(
-                    "Share",
-                    style: TextStyle(color: widget.theme.colorScheme.onSurface),
+              trailing: PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: widget.theme.hintColor),
+                color: widget.theme.cardColor,
+                onSelected: (value) async {
+                  if (value == 'share') {
+                    await SharePlus.instance.share(
+                      ShareParams(files: [XFile(widget.path)]),
+                    );
+                  } else if (value == 'rename') {
+                    _renameFile(context, fileName);
+                  } else if (value == 'delete') {
+                    widget.onRemove();
+                  } else if (value == 'delete_file') {
+                    widget.onRemove();
+                    try {
+                      await file.delete();
+                    } catch (e) {
+                      debugPrint("Failed to delete file from storage: $e");
+                    }
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'share',
+                    child: Text(
+                      "Share",
+                      style: TextStyle(
+                        color: widget.theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'rename',
-                  child: Text(
-                    "Rename",
-                    style: TextStyle(color: widget.theme.colorScheme.onSurface),
+                  PopupMenuItem(
+                    value: 'rename',
+                    child: Text(
+                      "Rename",
+                      style: TextStyle(
+                        color: widget.theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text(
-                    "Remove from list",
-                    style: TextStyle(color: Colors.redAccent),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      "Remove from list",
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete_file',
-                  child: Text(
-                    "Delete File permanently",
-                    style: TextStyle(color: Colors.redAccent),
+                  const PopupMenuItem(
+                    value: 'delete_file',
+                    child: Text(
+                      "Delete File permanently",
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

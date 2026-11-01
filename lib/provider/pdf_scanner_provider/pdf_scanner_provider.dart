@@ -18,46 +18,48 @@ class PdfScannerProvider extends ChangeNotifier {
 
     try {
       final DocumentScannerOptions options = DocumentScannerOptions(
-        documentFormat: DocumentFormat.pdf,
-        mode: ScannerMode.filter, // Base mode (allows crop & filter). ML Kit controls auto-capture internally.
+        documentFormats: {DocumentFormat.pdf}, // v0.5.0: plural name, takes a Set
+        mode: ScannerMode.filter, // crop & filter. ML Kit controls auto-capture internally.
         pageLimit: 100,
         isGalleryImport: true,
       );
 
       final documentScanner = DocumentScanner(options: options);
-      
+
       final DocumentScanningResult result = await documentScanner.scanDocument();
-      
+      debugPrint(
+        "Scanner result -> pdf: ${result.pdf?.uri}, "
+            "pageCount: ${result.pdf?.pageCount}, images: ${result.images?.length ?? 0}",
+      );
+
       if (result.pdf != null && result.pdf!.uri.isNotEmpty) {
-        final String scannedPdfPath = result.pdf!.uri;
-        final File tempFile = File(scannedPdfPath);
-        
+        final File tempFile = File(result.pdf!.uri);
+
         if (await tempFile.exists()) {
           final bytes = await tempFile.readAsBytes();
-          
-          String? permanentPath;
-          if (context.mounted) {
-            permanentPath = await context.read<FileHistoryProvider>().addFile(
-              'Scanned_Doc_${DateTime.now().millisecondsSinceEpoch}.pdf',
-              bytes: bytes,
-            );
-          }
 
-          _isScanning = false;
-          notifyListeners();
+          if (!context.mounted) return null;
+
+          // Saves a private copy and adds it to Recent Documents.
+          final String? permanentPath =
+          await context.read<FileHistoryProvider>().addFile(
+            'Scanned_Doc_${DateTime.now().millisecondsSinceEpoch}.pdf',
+            bytes: bytes,
+          );
+
           return permanentPath;
+        } else {
+          debugPrint("Scanner: PDF file not found at ${result.pdf!.uri}");
         }
       }
-      
+
+      return null;
+    } catch (e, st) {
+      debugPrint("Scanner Error: ${e.runtimeType} $e\n$st");
+      return null;
+    } finally {
       _isScanning = false;
       notifyListeners();
-      return null;
-      
-    } catch (e) {
-      debugPrint("Scanner Error: $e");
-      _isScanning = false;
-      notifyListeners();
-      return null;
     }
   }
 }
