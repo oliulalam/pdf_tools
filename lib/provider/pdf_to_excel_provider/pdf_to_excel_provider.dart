@@ -161,7 +161,7 @@ class PdfToExcelProvider extends ChangeNotifier {
         bytes: Uint8List.fromList(excelBytes),
       );
 
-      return _handleSaveSuccess(context, outputPath);
+      return _handleSaveSuccess(context, outputPath, Uint8List.fromList(excelBytes));
     } catch (e) {
       debugPrint("Excel Save Error: $e");
       _isLoading = false;
