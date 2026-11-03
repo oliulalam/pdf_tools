@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'dart:io';
 import 'dart:typed_data';
 
 class FileHistoryProvider extends ChangeNotifier {
   List<String> _filePaths = [];
   static const String _storageKey = 'created_files_history';
+  static const int _maxPrivateCopies = 30;
   
-  late final Future<void> _ready = _loadHistory();
+  late final Future<void> _ready;
 
   List<String> get filePaths => _filePaths.reversed.toList(); // Newest first
 
   FileHistoryProvider() {
-    // _ready future is created in declaration
+    _ready = _loadHistory();
   }
 
   Future<void> _loadHistory() async {
@@ -36,7 +38,7 @@ class FileHistoryProvider extends ChangeNotifier {
 
       if (bytes != null) {
         // Write fresh bytes to a new private file
-        final originalName = path.split(Platform.pathSeparator).last;
+        final originalName = p.basename(path).replaceAll(RegExp(r'[^a-zA-Z0-9.\-_]'), '_');
         final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
         final permanentPath = '${docsDir.path}/$fileName';
         final permanentFile = File(permanentPath);
@@ -50,7 +52,7 @@ class FileHistoryProvider extends ChangeNotifier {
             finalPath = path;
           } else {
             // Copy it to PDF_Quant_Documents
-            final originalName = path.split(Platform.pathSeparator).last;
+            final originalName = p.basename(path).replaceAll(RegExp(r'[^a-zA-Z0-9.\-_]'), '_');
             final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
             final permanentPath = '${docsDir.path}/$fileName';
             await file.copy(permanentPath);
@@ -68,6 +70,22 @@ class FileHistoryProvider extends ChangeNotifier {
     _filePaths.remove(finalPath);
     _filePaths.add(finalPath);
     
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
+      while (_filePaths.length > _maxPrivateCopies) {
+        final oldestPath = _filePaths.removeAt(0);
+        if (oldestPath.startsWith(docsDir.path)) {
+          final oldestFile = File(oldestPath);
+          if (await oldestFile.exists()) {
+            await oldestFile.delete();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error removing oldest private copies: $e");
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_storageKey, _filePaths);
     notifyListeners();
@@ -137,6 +155,26 @@ class FileHistoryProvider extends ChangeNotifier {
     _filePaths.clear();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);
+
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final docsDir = Directory('${appDir.path}/PDF_Quant_Documents');
+      if (await docsDir.exists()) {
+        final entities = docsDir.listSync();
+        for (final entity in entities) {
+          if (entity is File) {
+            try {
+              await entity.delete();
+            } catch (e) {
+              debugPrint("Error deleting file during clearHistory: $e");
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error clearing documents directory: $e");
+    }
+
     notifyListeners();
   }
 }

@@ -103,7 +103,7 @@ class _PdfWatermarkScreenState extends State<PdfWatermarkScreen> {
                                 title: const Text("Add Watermark", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                 subtitle: Text("Diagonal text in the center", style: TextStyle(fontSize: 12, color: theme.hintColor)),
                                 value: provider.addWatermark,
-                                activeColor: Colors.blueGrey,
+                                activeThumbColor: Colors.blueGrey,
                                 onChanged: (val) => provider.setWatermark(val),
                               ),
                               if (provider.addWatermark)
@@ -124,7 +124,7 @@ class _PdfWatermarkScreenState extends State<PdfWatermarkScreen> {
                                 title: const Text("Add Page Numbers", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                 subtitle: Text("Bottom center of each page", style: TextStyle(fontSize: 12, color: theme.hintColor)),
                                 value: provider.addPageNumbers,
-                                activeColor: Colors.blueGrey,
+                                activeThumbColor: Colors.blueGrey,
                                 onChanged: (val) => provider.setPageNumbers(val),
                               ),
                             ],

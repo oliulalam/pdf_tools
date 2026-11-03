@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart'; // For compute
 import 'package:flutter/material.dart';
@@ -12,6 +11,19 @@ import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:archive/archive_io.dart';
+
+int _countPagesTask(String path) {
+  try {
+    final File file = File(path);
+    final Uint8List bytes = file.readAsBytesSync();
+    final PdfDocument document = PdfDocument(inputBytes: bytes);
+    final int count = document.pages.count;
+    document.dispose();
+    return count;
+  } catch (_) {
+    return 0;
+  }
+}
 
 class PdfSplitProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -207,16 +219,7 @@ class PdfSplitProvider extends ChangeNotifier {
   }
 
   Future<int> _getPageCountFromPath(String path) async {
-    PdfDocument? doc;
-    try {
-      final bytes = await File(path).readAsBytes();
-      doc = PdfDocument(inputBytes: bytes);
-      return doc.pages.count;
-    } catch (_) {
-      return 0;
-    } finally {
-      doc?.dispose();
-    }
+    return compute(_countPagesTask, path);
   }
 
   Future<bool> saveFilesSmart(BuildContext context) async {
@@ -284,7 +287,7 @@ class PdfSplitProvider extends ChangeNotifier {
 
         if (outputPath != null) {
           if (context.mounted) {
-            context.read<FileHistoryProvider>().addFile(outputPath);
+            await context.read<FileHistoryProvider>().addFile(outputPath, bytes: zipBytes);
             _showToast("Files saved successfully as ZIP", Colors.green);
           }
           _setStatus('');
@@ -318,6 +321,14 @@ class PdfSplitProvider extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     rangeController.dispose();
+    // Cleanup temp generated files to prevent storage leak
+    for (final path in _generatedFiles) {
+      final file = File(path);
+      file.exists().then((exists) {
+        if (exists) file.delete().catchError((_) => file);
+      });
+    }
+    _generatedFiles = [];
     super.dispose();
   }
 }

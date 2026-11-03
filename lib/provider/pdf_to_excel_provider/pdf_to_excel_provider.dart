@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
@@ -9,6 +9,50 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:csv/csv.dart';
+
+List<List<String>> _extractGridTask(String path) {
+  final File file = File(path);
+  final Uint8List bytes = file.readAsBytesSync();
+  final PdfDocument document = PdfDocument(inputBytes: bytes);
+  final PdfTextExtractor extractor = PdfTextExtractor(document);
+  List<List<String>> grid = [];
+
+  try {
+    for (int i = 0; i < document.pages.count; i++) {
+      final String pageText = extractor.extractText(
+        startPageIndex: i,
+        endPageIndex: i,
+      );
+
+      // Heuristic splitting
+      final List<String> lines = pageText.split('\n');
+      for (var line in lines) {
+        if (line.trim().isEmpty) continue;
+
+        // Split by 2 or more spaces to approximate columns
+        final List<String> columns = line.trim().split(RegExp(r'\s{2,}'));
+        grid.add(columns);
+      }
+    }
+
+    // Pad all rows to match the maximum number of columns
+    if (grid.isNotEmpty) {
+      int maxCols = 0;
+      for (var row in grid) {
+        if (row.length > maxCols) maxCols = row.length;
+      }
+      for (int i = 0; i < grid.length; i++) {
+        while (grid[i].length < maxCols) {
+          grid[i].add(""); // Pad with empty strings
+        }
+      }
+    }
+  } finally {
+    document.dispose();
+  }
+  
+  return grid;
+}
 
 class PdfToExcelProvider extends ChangeNotifier {
   File? _selectedFile;
@@ -66,56 +110,15 @@ class PdfToExcelProvider extends ChangeNotifier {
     _progress = 0.0;
     _isCancelled = false;
     _extractedGrid = null;
-    _statusMessage = "Analyzing PDF structure...";
+    _statusMessage = "Extracting text...";
     notifyListeners();
 
-    PdfDocument? document;
-    List<List<String>> grid = [];
-
     try {
-      final Uint8List bytes = await _selectedFile!.readAsBytes();
-      document = PdfDocument(inputBytes: bytes);
-      final PdfTextExtractor extractor = PdfTextExtractor(document);
+      if (_isCancelled) return false;
 
-      for (int i = 0; i < document.pages.count; i++) {
-        if (_isCancelled) {
-          document.dispose();
-          return false;
-        }
+      final grid = await compute(_extractGridTask, _selectedFile!.path);
 
-        _statusMessage =
-            "Extracting Page ${i + 1} of ${document.pages.count}...";
-        _progress = (i + 1) / document.pages.count;
-        notifyListeners();
-
-        final String pageText = extractor.extractText(
-          startPageIndex: i,
-          endPageIndex: i,
-        );
-
-        // Heuristic splitting
-        final List<String> lines = pageText.split('\n');
-        for (var line in lines) {
-          if (line.trim().isEmpty) continue;
-
-          // Split by 2 or more spaces to approximate columns
-          final List<String> columns = line.trim().split(RegExp(r'\s{2,}'));
-          grid.add(columns);
-        }
-      }
-
-      // Pad all rows to match the maximum number of columns
-      if (grid.isNotEmpty) {
-        int maxCols = 0;
-        for (var row in grid) {
-          if (row.length > maxCols) maxCols = row.length;
-        }
-        for (int i = 0; i < grid.length; i++) {
-          while (grid[i].length < maxCols) {
-            grid[i].add(""); // Pad with empty strings
-          }
-        }
-      }
+      if (_isCancelled) return false;
 
       _extractedGrid = grid;
       _isLoading = false;
@@ -128,8 +131,6 @@ class PdfToExcelProvider extends ChangeNotifier {
       _statusMessage = "Error: Extraction failed";
       notifyListeners();
       return false;
-    } finally {
-      document?.dispose();
     }
   }
 
@@ -218,7 +219,7 @@ class PdfToExcelProvider extends ChangeNotifier {
       Provider.of<FileHistoryProvider>(
         context,
         listen: false,
-      ).addFile(outputPath, bytes: bytes);
+      ).addFile(outputPath, bytes: bytes); // fire-and-forget intentional: UI shouldn't block on history save
       OpenFilex.open(outputPath);
     }
     return true;

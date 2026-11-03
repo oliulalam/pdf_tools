@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart'; // For compute
 import 'package:flutter/material.dart';
@@ -145,6 +144,7 @@ class PdfMergerProvider extends ChangeNotifier {
             debugPrint('Could not open file: $e');
           }
         }
+        clearAll();
         return true;
       } else {
         setStatusMessage(null);

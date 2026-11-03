@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf_toolkit/widgets/banner_ad_widget.dart';
-import 'package:pdf_toolkit/screen/pdf_viewer_screen/pdf_viewer_screen.dart';
+import 'package:pdf_toolkit/utils/open_file_helper.dart';
 
 enum SortOption { dateDesc, dateAsc, nameAsc, nameDesc }
 
@@ -54,7 +54,7 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                 builder: (context) => AlertDialog(
                   title: const Text("Clear History?"),
                   content: const Text(
-                    "This will only clear the list, not delete the actual files.",
+                    "This removes the list and the app's internal copies. Files you saved to your device storage are not deleted.",
                   ),
                   actions: [
                     TextButton(
@@ -96,10 +96,6 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
               ),
               onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: BannerAdWidget(placement: AdPlacement.recent),
           ),
           Expanded(
             child: Consumer<FileHistoryProvider>(
@@ -143,15 +139,16 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                         : nameB.compareTo(nameA);
                   } else {
                     // Date sort
-                    try {
-                      final statA = fileA.statSync().modified;
-                      final statB = fileB.statSync().modified;
-                      return _sortOption == SortOption.dateDesc
-                          ? statB.compareTo(statA)
-                          : statA.compareTo(statB);
-                    } catch (_) {
-                      return 0;
-                    }
+                    final regExp = RegExp(r'^(\d{13})_');
+                    final nameA = a.split(Platform.pathSeparator).last;
+                    final nameB = b.split(Platform.pathSeparator).last;
+                    final matchA = regExp.firstMatch(nameA);
+                    final matchB = regExp.firstMatch(nameB);
+                    final timeA = matchA != null ? int.parse(matchA.group(1)!) : 0;
+                    final timeB = matchB != null ? int.parse(matchB.group(1)!) : 0;
+                    return _sortOption == SortOption.dateDesc
+                        ? timeB.compareTo(timeA)
+                        : timeA.compareTo(timeB);
                   }
                 });
 
@@ -161,17 +158,37 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: displayedFiles.length,
-                  itemBuilder: (context, index) {
-                    final path = displayedFiles[index];
-                    return _FileItemCard(
-                      path: path,
-                      theme: theme,
-                      onRemove: () => provider.removeFile(path),
-                    );
-                  },
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  children: [
+                    ...displayedFiles.map(
+                      (path) => _FileItemCard(
+                        path: path,
+                        theme: theme,
+                        onRemove: () => provider.removeFile(path),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                      child: Text(
+                        "ADVERTISEMENT",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: BannerAdWidget(placement: AdPlacement.recent),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 );
               },
             ),
@@ -198,6 +215,8 @@ class _FileItemCard extends StatefulWidget {
 }
 
 class _FileItemCardState extends State<_FileItemCard> {
+  late final Future<FileStat> _statFuture = File(widget.path).stat();
+
   void _renameFile(BuildContext context, String currentFileName) {
     final TextEditingController controller =
     TextEditingController(text: currentFileName);
@@ -254,7 +273,7 @@ class _FileItemCardState extends State<_FileItemCard> {
     final file = File(widget.path);
 
     return FutureBuilder<FileStat>(
-      future: file.stat(),
+      future: _statFuture,
       builder: (context, snapshot) {
         // Even if file doesn't exist, we handle it gracefully
         final exists = snapshot.hasData &&
@@ -263,7 +282,7 @@ class _FileItemCardState extends State<_FileItemCard> {
           return const SizedBox.shrink();
         }
 
-        final fileName = widget.path.split(Platform.pathSeparator).last;
+        final fileName = displayFileName(widget.path);
         String subtitle = "Loading...";
 
         if (snapshot.hasData) {
@@ -286,9 +305,9 @@ class _FileItemCardState extends State<_FileItemCard> {
                 horizontal: 16,
                 vertical: 8,
               ),
-              leading: const CircleAvatar(
+              leading: CircleAvatar(
                 backgroundColor: Colors.orangeAccent,
-                child: Icon(Icons.picture_as_pdf, color: Colors.white),
+                child: Icon(p.extension(widget.path).toLowerCase() == '.pdf' ? Icons.picture_as_pdf_rounded : Icons.insert_drive_file_rounded, color: Colors.white),
               ),
               title: Text(
                 fileName,
@@ -312,16 +331,17 @@ class _FileItemCardState extends State<_FileItemCard> {
                   ),
                 ],
               ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PdfViewerScreen(
-                      path: widget.path,
-                      title: fileName,
-                    ),
-                  ),
-                );
+              onTap: () async {
+                final exists = await file.exists();
+                if (!context.mounted) return;
+                if (exists) {
+                  openRecentFile(context, widget.path, fileName);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("File not found. Removing from list.")),
+                  );
+                  widget.onRemove();
+                }
               },
               trailing: PopupMenuButton<String>(
                 icon: Icon(Icons.more_vert, color: widget.theme.hintColor),

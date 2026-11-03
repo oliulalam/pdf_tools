@@ -1,7 +1,8 @@
 {
   "app_name": "PDF Quant",
+  "home": "Home",
   "tools": "Tools",
-  "my_files": "My Files",
+  "my_files": "Recent",
   "settings": "Settings",
   "merge_pdf": "Merge PDF",
   "split_pdf": "Split PDF",

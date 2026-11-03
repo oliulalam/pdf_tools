@@ -133,6 +133,34 @@ class PdfCompressorScreen extends StatelessWidget {
                           currentSizeMb,
                         ),
 
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withAlpha(20),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.amber.withAlpha(60)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded, color: Colors.amber, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    "Note: Compression re-renders pages as optimized images. Embedded text will not remain selectable.",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: theme.hintColor,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                         if (provider.isLoading) ...[
                           const SizedBox(height: 24),
                           const Padding(

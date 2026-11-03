@@ -338,11 +338,10 @@ class _PdfPresenterScreenState extends State<PdfPresenterScreen> {
                                                 ),
                                               ),
                                               Text(
-                                                "Not supported offline",
+                                                "Prevents display from sleeping",
                                                 style: TextStyle(
                                                   fontSize: 10,
-                                                  color: Colors.redAccent
-                                                      .withAlpha(150),
+                                                  color: theme.hintColor,
                                                 ),
                                               ),
                                             ],
@@ -351,9 +350,8 @@ class _PdfPresenterScreenState extends State<PdfPresenterScreen> {
                                       ),
                                       Switch(
                                         value: _keepAwake,
-                                        activeColor: Colors.deepPurple[400],
+                                        activeThumbColor: Colors.deepPurple[400],
                                         onChanged: (val) {
-                                          // Visual only for now
                                           setState(() => _keepAwake = val);
                                         },
                                       ),

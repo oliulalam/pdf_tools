@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart'; // For compute
 import 'package:flutter/material.dart';
@@ -8,6 +7,19 @@ import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:open_filex/open_filex.dart';
+
+int _countPagesTask(String path) {
+  try {
+    final File file = File(path);
+    final Uint8List bytes = file.readAsBytesSync();
+    final PdfDocument document = PdfDocument(inputBytes: bytes);
+    final int count = document.pages.count;
+    document.dispose();
+    return count;
+  } catch (_) {
+    return 0;
+  }
+}
 
 class PdfPageDeleteProvider extends ChangeNotifier {
   File? _selectedFile;
@@ -30,10 +42,7 @@ class PdfPageDeleteProvider extends ChangeNotifier {
 
     if (pickedFile != null && pickedFile.path != null) {
       _selectedFile = File(pickedFile.path!);
-      final bytes = await _selectedFile!.readAsBytes();
-      final PdfDocument document = PdfDocument(inputBytes: bytes);
-      _totalPages = document.pages.count;
-      document.dispose();
+      _totalPages = await compute(_countPagesTask, _selectedFile!.path);
       _statusMessage = null;
       notifyListeners();
       return true;

@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'; // For compute
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
@@ -96,7 +94,11 @@ class _SelectedImagesScreenState extends State<SelectedImagesScreen> {
   Future<void> _addMorePhotos(ImagesProvider provider) async {
     try {
       final picker = ImagePicker();
-      final picked = await picker.pickMultiImage();
+      final picked = await picker.pickMultiImage(
+        imageQuality: 85,
+        maxWidth: 2480,
+        maxHeight: 3508,
+      );
       if (picked.isNotEmpty) {
         provider.addImages(picked);
       }
@@ -293,7 +295,7 @@ class _SelectedImagesScreenState extends State<SelectedImagesScreen> {
               borderRadius: BorderRadius.circular(8),
               child: Stack(
                 children: [
-                  Image.file(file, width: 60, height: 60, fit: BoxFit.cover),
+                  Image.file(file, width: 60, height: 60, fit: BoxFit.cover, cacheWidth: 180),
                   Positioned(
                     top: 4,
                     left: 4,

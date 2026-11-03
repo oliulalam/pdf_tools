@@ -1,9 +1,11 @@
 import 'dart:io';
-import 'package:archive/archive_io.dart';
+import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:pdf_toolkit/provider/pdf_to_image_provider/pdf_to_image_provider.dart';
 import 'package:pdf_toolkit/utils/ad_helper.dart';
@@ -127,27 +129,20 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
     provider.setZipping(true);
 
     try {
-      final tempDir = await getTemporaryDirectory();
-      final workingDir = Directory(
-        '${tempDir.path}/zip_out_${DateTime.now().millisecondsSinceEpoch}',
-      );
-      await workingDir.create(recursive: true);
-
-      final tempZipPath = '${workingDir.path}/images.zip';
-
-      final encoder = ZipFileEncoder();
-      encoder.create(tempZipPath);
+      final archive = Archive();
 
       for (final imagePath in provider.pageImages) {
         final file = File(imagePath);
         if (await file.exists()) {
-          encoder.addFile(file);
+          final bytes = await file.readAsBytes();
+          final fileName = file.path.split(Platform.pathSeparator).last;
+          archive.addFile(ArchiveFile(fileName, bytes.length, bytes));
         }
       }
-      encoder.close();
 
-      final sourceZip = File(tempZipPath);
-      final zipBytes = await sourceZip.readAsBytes();
+      final zipData = ZipEncoder().encode(archive);
+
+      final Uint8List zipBytes = Uint8List.fromList(zipData);
 
       final String? outputPath = await FilePicker.saveFile(
         dialogTitle: 'Select where you want to save',
@@ -158,11 +153,13 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
       );
 
       if (outputPath == null) {
-        if (await workingDir.exists()) await workingDir.delete(recursive: true);
         return false;
       }
       
-      if (await workingDir.exists()) await workingDir.delete(recursive: true);
+      if (mounted) {
+        await context.read<FileHistoryProvider>().addFile(outputPath, bytes: zipBytes);
+      }
+
       return true;
     } catch (e) {
       debugPrint("Error in _saveAsZip: $e");
@@ -329,6 +326,7 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
                                   child: Image.file(
                                     File(provider.pageImages[index]),
                                     fit: BoxFit.cover,
+                                    cacheWidth: 600,
                                   ),
                                 );
                               },

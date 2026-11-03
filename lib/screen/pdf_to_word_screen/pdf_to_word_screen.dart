@@ -15,7 +15,7 @@ class PdfToWordScreen extends StatefulWidget {
 
 class _PdfToWordScreenState extends State<PdfToWordScreen> {
   final TextEditingController _reviewController = TextEditingController();
-  bool _useOcr =
+  final bool _useOcr =
       true; // Always true for now as our implementation relies on ML Kit
 
   @override
@@ -31,11 +31,6 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
 
     return Consumer<PdfToWordProvider>(
       builder: (context, provider, child) {
-        // Auto-fill review controller when extraction is done
-        if (provider.extractedText != null && _reviewController.text.isEmpty) {
-          _reviewController.text = provider.extractedText!;
-        }
-
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: const ToolAppBar(),
@@ -44,13 +39,10 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(0),
-                  child: provider.extractedText != null
-                      ? _buildReviewPhase(context, theme, provider)
-                      : _buildSelectionPhase(context, theme, isDark, provider),
+                  child: _buildSelectionPhase(context, theme, isDark, provider),
                 ),
               ),
-              if (provider.extractedText == null &&
-                  provider.selectedFile == null)
+              if (provider.selectedFile == null)
                 const BannerAdWidget(placement: AdPlacement.tools),
             ],
           ),
@@ -362,7 +354,7 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
                     ),
                     Switch(
                       value: _useOcr,
-                      activeColor: Colors.blue[700],
+                      activeThumbColor: Colors.blue[700],
                       onChanged: null,
                     ),
                   ],
@@ -402,11 +394,14 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
             const SizedBox(height: 100),
             if (!provider.isLoading)
               BottomActionBar(
-                actionText: "Extract Text",
+                actionText: "Extract Text & Save",
                 isLoading: provider.isLoading,
                 color: Colors.blue[700]!,
                 onAction: () async {
-                  await provider.extractTextForReview();
+                  final success = await provider.extractAndSave(context);
+                  if (success) {
+                    AdHelper.showInterstitialAd(() {});
+                  }
                 },
               ),
           ],

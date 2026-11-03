@@ -106,11 +106,11 @@ class _PdfOrganizeScreenState extends State<PdfOrganizeScreen> {
                                     leading: CircleAvatar(
                                       backgroundColor: Colors.amber.withAlpha(50),
                                       child: Text(
-                                        "${pageData.originalIndex + 1}",
+                                        "${index + 1}",
                                         style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
                                       ),
                                     ),
-                                    title: Text("Page ${pageData.originalIndex + 1}"),
+                                    title: Text("Page ${index + 1} (Orig: ${pageData.originalIndex + 1})"),
                                     subtitle: Text(
                                       "Rotation: ${pageData.rotationDegrees}°",
                                       style: TextStyle(color: theme.hintColor, fontSize: 12),

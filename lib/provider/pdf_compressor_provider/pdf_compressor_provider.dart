@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // For compute
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';

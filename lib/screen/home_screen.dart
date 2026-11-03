@@ -5,8 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:pdf_toolkit/app.dart';
+import 'package:pdf_toolkit/screen/my_files_screen.dart';
+import 'package:pdf_toolkit/utils/open_file_helper.dart';
 
 // Providers
 import 'package:fluttertoast/fluttertoast.dart';
@@ -23,7 +24,6 @@ import 'package:pdf_toolkit/provider/pdf_presenter_provider/pdf_presenter_provid
 
 // Screens
 import 'package:pdf_toolkit/screen/image_to_pdf_screen/selected_images_screen.dart';
-import 'package:pdf_toolkit/screen/pdf_viewer_screen/pdf_viewer_screen.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf_toolkit/screen/pdf_compressor_screen/pdf_compressor_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_merger_screen/pdf_merger_screen.dart';
@@ -36,6 +36,7 @@ import 'package:pdf_toolkit/screen/pdf_presenter_screen/pdf_presenter_screen.dar
 import 'package:pdf_toolkit/screen/pdf_security_screen/pdf_security_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_organize_screen/pdf_organize_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_watermark_screen/pdf_watermark_screen.dart';
+import 'package:pdf_toolkit/screen/pdf_scanner_screen/scanned_document_preview_screen.dart';
 import 'package:pdf_toolkit/screen/privacy_policy_screen.dart';
 import 'package:pdf_toolkit/screen/settings_screen.dart';
 import 'package:pdf_toolkit/provider/pdf_security_provider/pdf_security_provider.dart';
@@ -105,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
-          children: [const _HomeTab(), const _RecentTab(), const _ToolsTab()],
+          children: [const _HomeTab(), const MyFilesScreen(), const _ToolsTab()],
         ),
       ),
       bottomNavigationBar: Container(
@@ -131,21 +132,21 @@ class _HomeScreenState extends State<HomeScreen> {
           showUnselectedLabels: true,
           type: BottomNavigationBarType.fixed,
           elevation: 0,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_rounded),
-              label: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home_rounded),
+              label: 'home'.tr(),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.access_time_rounded),
-              activeIcon: Icon(Icons.access_time_filled_rounded),
-              label: 'Recent',
+              icon: const Icon(Icons.access_time_rounded),
+              activeIcon: const Icon(Icons.access_time_filled_rounded),
+              label: 'my_files'.tr(),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings_rounded),
-              label: 'Settings',
+              icon: const Icon(Icons.settings_outlined),
+              activeIcon: const Icon(Icons.settings_rounded),
+              label: 'settings'.tr(),
             ),
           ],
         ),
@@ -337,27 +338,24 @@ class _HomeTabState extends State<_HomeTab> {
         icon: Icons.document_scanner_rounded,
         color: Colors.blueAccent,
         onTap: () async {
-          final String? scannedPath = await context.read<PdfScannerProvider>().startScan(context);
-          if (!context.mounted) return;
-          
-          if (scannedPath != null) {
-            Navigator.push(
-              context,
+          final navigator = Navigator.of(context);
+          final scanResult =
+              await context.read<PdfScannerProvider>().startScan(context);
+          if (!mounted) return;
+
+          if (scanResult != null) {
+            navigator.push(
               MaterialPageRoute(
-                builder: (_) => PdfViewerScreen(
-                  path: scannedPath,
-                  title: 'Scanned Document',
+                builder: (_) => ScannedDocumentPreviewScreen(
+                  tempPdfPath: scanResult.pdfPath,
+                  pageCount: scanResult.pageCount,
                 ),
               ),
-            ).then((_) {
-              if (context.mounted) {
-                AdHelper.showInterstitialAd(() {});
-              }
-            });
+            );
           } else {
             Fluttertoast.showToast(
-              msg: "Scanning failed or cancelled.",
-              backgroundColor: Colors.red,
+              msg: "Scanning cancelled.",
+              backgroundColor: Colors.black87,
             );
           }
         },
@@ -677,70 +675,6 @@ class _HomeTabState extends State<_HomeTab> {
 }
 
 // --------------------------------------------------------------------------
-// RECENT TAB
-// --------------------------------------------------------------------------
-
-class _RecentTab extends StatelessWidget {
-  const _RecentTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-          child: Text(
-            "Recent Documents",
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: isDark ? Colors.white : const Color(0xFF1E293B),
-              letterSpacing: -0.5,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Consumer<FileHistoryProvider>(
-            builder: (context, historyProvider, child) {
-              final files = historyProvider.filePaths;
-
-              if (files.isEmpty) {
-                return Center(
-                  child: Text(
-                    "No recent documents found.",
-                    style: TextStyle(color: theme.hintColor),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: files.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _RecentFileCard(
-                      path: files[index],
-                      theme: theme,
-                      isDark: isDark,
-                      onDelete: () => historyProvider.removeFile(files[index]),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// --------------------------------------------------------------------------
 // TOOLS & SETTINGS TAB
 // --------------------------------------------------------------------------
 
@@ -832,6 +766,22 @@ class _ToolsTab extends StatelessWidget {
                 subtitle: "Share PDF Quant with your friends",
                 onTap: () => _shareApp(),
               ),
+              const SizedBox(height: 16),
+              // Advertisement Section
+              const Center(
+                child: Text(
+                  "ADVERTISEMENT",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const BannerAdWidget(placement: AdPlacement.tools),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -979,19 +929,12 @@ class _RecentFileCard extends StatelessWidget {
     required this.path,
     required this.theme,
     required this.isDark,
-    this.onDelete,
-  });
+  }) : onDelete = null;
 
   @override
   Widget build(BuildContext context) {
     final file = File(path);
-    final rawName = path.split(Platform.pathSeparator).last;
-    
-    // Format display name
-    String displayName = rawName;
-    if (!displayName.toLowerCase().contains('.')) {
-      displayName = "Document_$rawName.pdf";
-    }
+    String displayName = displayFileName(path);
 
     return FutureBuilder<FileStat>(
       future: file.stat(),
@@ -1040,8 +983,8 @@ class _RecentFileCard extends StatelessWidget {
                   color: Colors.redAccent.withAlpha(20),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.picture_as_pdf_rounded,
+                child: Icon(
+                  p.extension(path).toLowerCase() == '.pdf' ? Icons.picture_as_pdf_rounded : Icons.insert_drive_file_rounded,
                   color: Colors.redAccent,
                 ),
               ),
@@ -1081,15 +1024,7 @@ class _RecentFileCard extends StatelessWidget {
                 final exists = await file.exists();
                 if (!context.mounted) return;
                 if (exists) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PdfViewerScreen(
-                        path: path,
-                        title: displayName,
-                      ),
-                    ),
-                  );
+                  openRecentFile(context, path, displayName);
                 } else {
                   Fluttertoast.showToast(
                     msg: "File not found. Removing from list.",

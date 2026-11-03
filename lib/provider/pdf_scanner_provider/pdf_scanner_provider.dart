@@ -1,18 +1,28 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
-import 'package:pdf_toolkit/provider/file_history_provider.dart';
-import 'package:provider/provider.dart';
+
+class ScannedDocResult {
+  final String pdfPath;
+  final int pageCount;
+  final List<String> imageUris;
+
+  ScannedDocResult({
+    required this.pdfPath,
+    required this.pageCount,
+    required this.imageUris,
+  });
+}
 
 class PdfScannerProvider extends ChangeNotifier {
   bool _isScanning = false;
   bool get isScanning => _isScanning;
 
-  Future<String?> startScan(BuildContext context) async {
+  Future<ScannedDocResult?> startScan(BuildContext context) async {
     return _performScan(context);
   }
 
-  Future<String?> _performScan(BuildContext context) async {
+  Future<ScannedDocResult?> _performScan(BuildContext context) async {
     _isScanning = true;
     notifyListeners();
 
@@ -36,18 +46,11 @@ class PdfScannerProvider extends ChangeNotifier {
         final File tempFile = File(result.pdf!.uri);
 
         if (await tempFile.exists()) {
-          final bytes = await tempFile.readAsBytes();
-
-          if (!context.mounted) return null;
-
-          // Saves a private copy and adds it to Recent Documents.
-          final String? permanentPath =
-          await context.read<FileHistoryProvider>().addFile(
-            'Scanned_Doc_${DateTime.now().millisecondsSinceEpoch}.pdf',
-            bytes: bytes,
+          return ScannedDocResult(
+            pdfPath: tempFile.path,
+            pageCount: result.pdf?.pageCount ?? 1,
+            imageUris: result.images ?? [],
           );
-
-          return permanentPath;
         } else {
           debugPrint("Scanner: PDF file not found at ${result.pdf!.uri}");
         }

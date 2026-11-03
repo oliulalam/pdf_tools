@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf_toolkit/app.dart';
 import 'package:pdf_toolkit/utils/ad_helper.dart';
@@ -12,9 +11,10 @@ Future<void> main() async {
   // Fast app startup! We initialize Ads AFTER runApp to keep launch time minimal.
   runApp(
     EasyLocalization(
-      supportedLocales: const [Locale('en'), Locale('bn')],
+      supportedLocales: const [Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
+      startLocale: const Locale('en'),
       child: const PdfToolKitApp(),
     ),
   );

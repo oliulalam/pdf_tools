@@ -13,6 +13,26 @@ class OrganizePageData {
   OrganizePageData({required this.originalIndex, this.rotationDegrees = 0});
 }
 
+List<int> _extractPageRotationsTask(String path) {
+  final File file = File(path);
+  final Uint8List bytes = file.readAsBytesSync();
+  final PdfDocument doc = PdfDocument(inputBytes: bytes);
+  List<int> rotations = [];
+  try {
+    for (int i = 0; i < doc.pages.count; i++) {
+      final page = doc.pages[i];
+      int initialRotation = 0;
+      if (page.rotation == PdfPageRotateAngle.rotateAngle90) initialRotation = 90;
+      if (page.rotation == PdfPageRotateAngle.rotateAngle180) initialRotation = 180;
+      if (page.rotation == PdfPageRotateAngle.rotateAngle270) initialRotation = 270;
+      rotations.add(initialRotation);
+    }
+  } finally {
+    doc.dispose();
+  }
+  return rotations;
+}
+
 class PdfOrganizeProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _statusMessage;
@@ -39,26 +59,18 @@ class PdfOrganizeProvider extends ChangeNotifier {
 
         _selectedFile = File(result.files.single.path!);
         
-        final bytes = await _selectedFile!.readAsBytes();
-        final doc = PdfDocument(inputBytes: bytes);
-        _totalPages = doc.pages.count;
+        final rotations = await compute(_extractPageRotationsTask, _selectedFile!.path);
+        _totalPages = rotations.length;
         
         _pages = List.generate(
           _totalPages,
           (index) {
-            final page = doc.pages[index];
-            int initialRotation = 0;
-            if (page.rotation == PdfPageRotateAngle.rotateAngle90) initialRotation = 90;
-            if (page.rotation == PdfPageRotateAngle.rotateAngle180) initialRotation = 180;
-            if (page.rotation == PdfPageRotateAngle.rotateAngle270) initialRotation = 270;
-            
             return OrganizePageData(
               originalIndex: index,
-              rotationDegrees: initialRotation,
+              rotationDegrees: rotations[index],
             );
           },
         );
-        doc.dispose();
 
         _isLoading = false;
         _statusMessage = null;

@@ -6,7 +6,6 @@ import 'package:pdf_toolkit/utils/ad_helper.dart';
 import 'package:pdf_toolkit/widgets/banner_ad_widget.dart';
 import 'package:pdf_toolkit/widgets/tool_ui_components.dart';
 import 'package:provider/provider.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class PdfSplitterScreen extends StatefulWidget {
   const PdfSplitterScreen({super.key});

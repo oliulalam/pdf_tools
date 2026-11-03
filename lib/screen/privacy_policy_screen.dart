@@ -73,7 +73,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   _buildSummaryPoint(
                     context,
                     "🔒",
-                    "Your files are never accessed by us or third parties",
+                    "We never access your files; the app processes them on your device",
                   ),
                   _buildSummaryPoint(
                     context,
@@ -103,7 +103,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "PDF Quant: Editor & Manager is designed to prioritize your privacy by processing your files locally on your device. All core file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, PDF-to-Excel conversion, Document Scanning, PDF Organize (page rotate/reorder), PDF Watermark (adding text watermark and page numbers), PDF Lock/Unlock (password protection), and PDF Presenter (full-screen viewing mode) — are performed locally.\n\n"
                   "We do not upload your files or personal documents to any server. The information the app stores, entirely on your own device, includes:\n\n"
                   "• App settings (Light/Dark mode theme preferences) stored locally via 'shared_preferences'\n"
-                  "• Recent Documents History: the names and file paths of PDFs you create or modify, stored locally so you can find them again in the app. This list never leaves your device and can be cleared at any time (see Section 12).\n"
+                  "• Recent Documents History: it stores the names and paths of files you create or modify, plus an app-private copy of those files, all only on your device. This list never leaves your device and can be cleared at any time (see Section 12).\n"
                   "• Ad-related identifiers collected by Google AdMob (see Section 4)\n\n"
                   "Document Scanner & Text Recognition (OCR): To convert physical documents to PDF and extract text for Word or Excel files, we use Google ML Kit Document Scanner and Text Recognition. These Machine Learning models run locally on your device. Your documents are NEVER sent to the cloud for text extraction.\n\n"
                   "PDF Password Protection: When you use the Lock PDF feature, you create a password that is applied directly to your PDF file using on-device encryption. We never see, store, or transmit this password — it exists only within the file you create and on your own device. If you forget this password, we cannot recover it for you.\n\n"
@@ -121,7 +121,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "To ensure your privacy and security, all PDF operations — including merging, splitting, compressing, scanning, and conversions (Word/Excel/Images) — occur locally on your mobile device. \n\n"
                   "• NO CLOUD UPLOADS: Your files are NEVER uploaded to any remote server or third-party cloud service.\n"
                   "• ON-DEVICE AI/OCR: Our document scanning and optical character recognition (OCR) uses Google ML Kit which runs on your device without sending any document content to Google servers.\n"
-                  "• NO DATA RETENTION: We do not store or keep copies of your documents on any server. Temporary files created during processing should be cleared by your system automatically.\n"
+                  "• NO DATA RETENTION: We do not store or keep copies of your documents on any server. Temporary working files are kept in the app's cache and are removed when no longer needed or by Android. A copy of each file you create is kept in the app's private storage so you can reopen it from Recent Documents. 'Remove from list' or 'Clear History' deletes these copies, and uninstalling the app removes everything.\n"
                   "• FULL PRIVACY: We have absolutely no remote access to the content of your documents at any time.",
             ),
 
@@ -132,8 +132,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "PDF Quant: Editor & Manager only requests permissions that are essential for its core functionality:\n\n"
                   "• File Selection & Storage: We use the system-managed file picker to allow you to select PDF files and images from your device for processing. This permission is used strictly to read the files you choose and to save the final results back to your device's storage. On older Android devices (API 29 and below), we may request 'WRITE_EXTERNAL_STORAGE' to ensure files can be saved correctly; this permission is not requested on modern Android versions.\n"
                   "• Image Selection: We use 'image_picker' for converting photos to PDF. These images are processed locally and are never transmitted beyond your device.\n"
-                  "• Camera Access: The app may request camera access through Google ML Kit Document Scanner for you to scan physical documents directly into PDF format.\n"
-                  "• Keep Screen Awake (Wake Lock): When using the Presenter feature with 'Keep screen awake' enabled, the app temporarily prevents your device from sleeping, using the WAKE_LOCK permission. This does not access any personal data.\n"
+                  "• Camera: The camera is used by Google's ML Kit Document Scanner screen when you scan a document. The app itself does not hold the CAMERA permission.\n"
+                  "• Keep Screen Awake: When you enable 'Keep screen awake' in the Presenter feature, the app keeps the screen on while the presentation is open. This does not require any special permission and does not access any personal data.\n"
                   "• Internet Access & Advertising ID (AD_ID): Required for Google AdMob to display advertisements and for the UMP consent management platform. The Advertising ID can be reset or opted out of via Android Settings → Google → Ads.\n\n"
                   "Note: On Android 13+ devices, the app uses the official System Photo Picker, which ensures we do not have broad access to your media library — only to the specific photos you select. On older devices, we use the Storage Access Framework (SAF), which also restricts app access to only the files you explicitly pick.",
             ),
@@ -158,7 +158,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   "• On first launch, you will see a consent dialog\n"
                   "• You may Accept or Decline personalized advertisements\n"
                   "• Your choice is stored locally and respected immediately\n"
-                  "• You may change your preference at any time from app Settings\n\n"
+                  "• You may change your preference at any time using the 'GDPR Privacy Options' in Settings (available where required by region; in other regions the app shows that it is not required)\n\n"
                   "Declining personalized ads does NOT affect any app functionality. All PDF features work regardless of your ad choice.",
             ),
 
@@ -168,17 +168,19 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "6. Third-Party Services",
               "The app uses the following third-party services which have their own Privacy Policies:\n\n"
                   "• Google Play Services\n"
+                  "• Google Play In-App Review (Google Play Core) — may be shown to ask for a rating\n"
                   "• Google AdMob — https://policies.google.com/privacy\n"
                   "• Google User Messaging Platform (UMP)\n"
                   "• Google ML Kit (for on-device Text Recognition/OCR)\n\n"
-                  "These services may collect information used to identify you as described in their respective policies.",
+                  "These services may collect information used to identify you as described in their respective policies. Google ML Kit may download its on-device text-recognition models over the internet when needed; your documents are never uploaded.",
             ),
 
             // ───── SECTION 7 ─────
             _buildSection(
               context,
               "7. File Sharing",
-              "When you use the 'Share' feature, your selected files are passed directly to third-party applications of your choice (e.g., WhatsApp, Gmail, Bluetooth). Once shared, the data is subject to the privacy policy of the respective application. We have no control over how third-party apps handle your shared data.",
+              "When you use the 'Share' feature, your selected files are passed directly to third-party applications of your choice (e.g., WhatsApp, Gmail, Bluetooth). Once shared, the data is subject to the privacy policy of the respective application. We have no control over how third-party apps handle your shared data.\n\n"
+                  "PDF files that you send to PDF Quant from other apps ('Open with' or 'Share') are processed locally on your device only.",
             ),
 
             // ───── SECTION 8 ─────
@@ -186,8 +188,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               context,
               "8. Data Storage & Security",
               "• App settings and Recent Documents history (file names and paths) are stored locally on your device only, and are never uploaded anywhere.\n"
-                  "• PDF files are processed in temporary storage and deleted immediately after.\n"
-                  "• Uninstalling the app removes all locally stored data.\n"
+                  "• Temporary working files are kept in the app's cache and are removed when no longer needed or by Android. A copy of each file you create is kept in the app's private storage so you can reopen it from Recent Documents. 'Remove from list' or 'Clear History' deletes these copies, and uninstalling the app removes everything.\n"
                   "• We do not operate any servers that store your data\n"
                   "• No user accounts or passwords are required\n\n"
                   "While we take all reasonable steps to protect your data, no method of electronic storage is 100% secure.",
@@ -229,7 +230,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               "Depending on your location, you may have the following rights:\n\n"
                   "• Right to Access: We do not store personal data on our servers. For data collected by Google AdMob (such as Advertising ID), please refer to Google's data access tools at myaccount.google.com\n"
                   "• Right to Deletion: You can use the 'Clear History' option in the Recent Documents / My Files screen to remove the local list of file names and paths at any time, or uninstall the app to delete all local app data.\n"
-                  "• Right to Withdraw Consent: Use the 'Privacy Options' button at the bottom of the Settings screen to change your ad consent preferences\n"
+                  "• Right to Withdraw Consent: Use the 'GDPR Privacy Options' button at the bottom of the Settings screen to change your ad consent preferences (available where required by region; in other regions the app shows that it is not required)\n"
                   "• Right to Opt-Out: Android Settings → Google → Ads → Opt out of Ads Personalization\n"
                   "• Right to Object: Decline personalized ads at any time via the consent form or device settings\n\n"
                   "California residents (CCPA): We do not sell your personal information.\n\n"
@@ -249,6 +250,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               context,
               "14. Contact Us",
               "If you have any questions, concerns, or requests regarding this Privacy Policy, please contact us:\n\n"
+                  "Publisher: Johura Soft\n"
                   "Email: johurasoft@gmail.com\n"
                   "Subject: PDF Quant — Privacy Request\n"
                   "Response Time: Within 30 days\n\n"
@@ -279,7 +281,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Last Updated: October 2026",
+                    "Last Updated: November 2026",
                     style: TextStyle(color: theme.hintColor, fontSize: 12),
                   ),
                 ],

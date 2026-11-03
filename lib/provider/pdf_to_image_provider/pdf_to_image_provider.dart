@@ -1,13 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:archive/archive_io.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 class PdfToImageProvider extends ChangeNotifier {
   String? _pdfPath;
   String? _pdfName;
-  List<String> _imagePaths = [];
+  final List<String> _imagePaths = [];
   bool _isConverting = false;
   bool _isZipping = false;
   String _statusMessage = '';
