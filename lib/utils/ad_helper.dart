@@ -5,10 +5,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:pdf_toolkit/utils/review_helper.dart';
 
 class AdHelper {
-  static const String _prodBannerHome = 'REPLACE_ME';
-  static const String _prodBannerRecent = 'REPLACE_ME';
-  static const String _prodBannerTools = 'REPLACE_ME';
-  static const String _prodInterstitial = 'REPLACE_ME';
+  static const String _prodBannerHome = 'ca-app-pub-3940256099942544/6300978111';
+  static const String _prodBannerRecent = 'ca-app-pub-3940256099942544/6300978111';
+  static const String _prodBannerTools = 'ca-app-pub-3940256099942544/6300978111';
+  static const String _prodInterstitial = 'ca-app-pub-3940256099942544/1033173712';
 
   static String get bannerHomeAdUnitId {
     if (Platform.isAndroid) {

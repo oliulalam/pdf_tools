@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -44,9 +46,28 @@ class PdfWatermarkProvider extends ChangeNotifier {
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
-      if (result != null && result.files.single.path != null) {
-        _selectedFile = File(result.files.single.path!);
-        notifyListeners();
+      final pickedFile = result?.files.single;
+      if (pickedFile != null) {
+        if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
+          final f = File(pickedFile.path!);
+          if (await f.exists()) {
+            _selectedFile = f;
+            notifyListeners();
+            return;
+          }
+        }
+        try {
+          final bytes = await pickedFile.xFile.readAsBytes();
+          if (bytes.isNotEmpty) {
+            final tempDir = await getTemporaryDirectory();
+            final tempFile = File('${tempDir.path}/temp_wm_${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}');
+            await tempFile.writeAsBytes(bytes);
+            _selectedFile = tempFile;
+            notifyListeners();
+          }
+        } catch (e) {
+          debugPrint("Error reading bytes for watermark: $e");
+        }
       }
     } catch (e) {
       debugPrint("Error picking file: $e");
@@ -76,10 +97,14 @@ class PdfWatermarkProvider extends ChangeNotifier {
       final ByteData fontByteData = await rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf');
       final Uint8List fontUint8List = fontByteData.buffer.asUint8List();
 
-      final bytes = await compute(
-        _watermarkTask,
+      final Uint8List sourceBytes = await _selectedFile!.readAsBytes();
+      if (sourceBytes.length < 5 || String.fromCharCodes(sourceBytes.take(5)) != '%PDF-') {
+        throw const FormatException('The selected file is not a valid PDF.');
+      }
+
+      final bytes = await _watermarkTask(
         _WatermarkParams(
-          inputPath: _selectedFile!.path,
+          inputBytes: sourceBytes,
           addWatermark: _addWatermark,
           watermarkText: _watermarkText,
           addPageNumbers: _addPageNumbers,
@@ -104,16 +129,20 @@ class PdfWatermarkProvider extends ChangeNotifier {
         return true;
       }
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint("Watermark Task Error: $e");
+      debugPrintStack(stackTrace: stackTrace);
       _isLoading = false;
       _statusMessage = "Error occurred.";
       notifyListeners();
       
       if (context.mounted) {
-        String msg = 'Failed to apply watermark.';
-        if (e.toString().toLowerCase().contains('password') || e.toString().toLowerCase().contains('encrypt')) {
+        String msg = 'Could not edit this PDF: $e';
+        final errorText = e.toString().toLowerCase();
+        if (errorText.contains('password') || errorText.contains('encrypt')) {
           msg = 'Failed: Please unlock the PDF before adding a watermark.';
+        } else if (e is FormatException) {
+          msg = e.message;
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg)),
@@ -125,13 +154,13 @@ class PdfWatermarkProvider extends ChangeNotifier {
 }
 
 class _WatermarkParams {
-  final String inputPath;
+  final Uint8List inputBytes;
   final bool addWatermark;
   final String watermarkText;
   final bool addPageNumbers;
   final Uint8List fontData;
   const _WatermarkParams({
-    required this.inputPath,
+    required this.inputBytes,
     required this.addWatermark,
     required this.watermarkText,
     required this.addPageNumbers,
@@ -139,50 +168,74 @@ class _WatermarkParams {
   });
 }
 
-Future<Uint8List> _watermarkTask(_WatermarkParams params) async {
-  final bytes = File(params.inputPath).readAsBytesSync();
-  final document = PdfDocument(inputBytes: bytes);
-  
-  // Use TrueType font to support Bengali and other Unicode characters
-  final font = PdfTrueTypeFont(params.fontData, 40);
-  final smallFont = PdfTrueTypeFont(params.fontData, 12);
-
-  for (int i = 0; i < document.pages.count; i++) {
-    final page = document.pages[i];
-    final size = page.size;
-
-    if (params.addWatermark && params.watermarkText.isNotEmpty) {
-      final graphics = page.graphics;
-      graphics.save();
-      graphics.setTransparency(0.25);
-      
-      // Center the watermark and rotate it diagonally
-      graphics.translateTransform(size.width / 2, size.height / 2);
-      graphics.rotateTransform(-45);
-      
-      final textSize = font.measureString(params.watermarkText);
-      graphics.drawString(
-        params.watermarkText,
-        font,
-        brush: PdfBrushes.red,
-        bounds: Rect.fromLTWH(-textSize.width / 2, -textSize.height / 2, textSize.width, textSize.height),
-      );
-      graphics.restore();
-    }
-
-    if (params.addPageNumbers) {
-      final text = "${i + 1} / ${document.pages.count}";
-      final textSize = smallFont.measureString(text);
-      page.graphics.drawString(
-        text,
-        smallFont,
-        brush: PdfBrushes.black,
-        bounds: Rect.fromLTWH((size.width - textSize.width) / 2, size.height - 30, textSize.width, textSize.height),
-      );
+PdfFont _createWatermarkFont(Uint8List fontData, String text, double fontSize) {
+  // Check if text contains non-ASCII characters (e.g. Bengali unicode)
+  final bool hasNonAscii = text.codeUnits.any((unit) => unit > 127);
+  if (hasNonAscii) {
+    try {
+      return PdfTrueTypeFont(fontData, fontSize);
+    } catch (e) {
+      debugPrint('Error loading TrueType font: $e');
     }
   }
+  return PdfStandardFont(PdfFontFamily.helvetica, fontSize, style: PdfFontStyle.bold);
+}
 
-  final outBytes = await document.save();
-  document.dispose();
-  return Uint8List.fromList(outBytes);
+Future<Uint8List> _watermarkTask(_WatermarkParams params) async {
+  final document = PdfDocument(inputBytes: params.inputBytes);
+  try {
+    final pageNumberFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
+    final centerFormat = PdfStringFormat(
+      alignment: PdfTextAlignment.center,
+      lineAlignment: PdfVerticalAlignment.middle,
+    );
+
+    for (int i = 0; i < document.pages.count; i++) {
+      final page = document.pages[i];
+      final size = page.size;
+      final g = page.graphics;
+      debugPrint('Page ${i + 1}: ${size.width} x ${size.height}');
+
+      if (params.addWatermark && params.watermarkText.trim().isNotEmpty) {
+        final text = params.watermarkText.trim();
+        final font = _createWatermarkFont(params.fontData, text, 48);
+        final state = g.save();
+        g.setTransparency(0.35);
+        g.translateTransform(size.width / 2, size.height / 2);
+        g.rotateTransform(-45);
+
+        final textSize = font.measureString(text);
+        g.drawString(
+          text,
+          font,
+          brush: PdfBrushes.red,
+          bounds: Rect.fromLTWH(
+            -size.width / 2,
+            -textSize.height,
+            size.width,
+            textSize.height * 2,
+          ),
+          format: centerFormat,
+        );
+        g.restore(state);
+      }
+
+      if (params.addPageNumbers) {
+        final state = g.save();
+        g.drawString(
+          '${i + 1} / ${document.pages.count}',
+          pageNumberFont,
+          brush: PdfBrushes.black,
+          bounds: Rect.fromLTWH(0, size.height - 36, size.width, 24),
+          format: centerFormat,
+        );
+        g.restore(state);
+      }
+    }
+
+    final outBytes = await document.save();
+    return Uint8List.fromList(outBytes);
+  } finally {
+    document.dispose();
+  }
 }

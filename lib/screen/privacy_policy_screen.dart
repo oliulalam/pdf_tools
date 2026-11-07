@@ -100,25 +100,25 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               "1. Information Collection and Use",
-              "PDF Quant: Editor & Manager is designed to prioritize your privacy by processing your files locally on your device. All core file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, PDF-to-Excel conversion, Document Scanning, PDF Organize (page rotate/reorder), PDF Watermark (adding text watermark and page numbers), PDF Lock/Unlock (password protection), and PDF Presenter (full-screen viewing mode) — are performed locally.\n\n"
+              "PDF Quant: Editor & Manager is designed to prioritize your privacy by processing your files locally on your device. All core file operations — including PDF compression, merging, splitting, page deletion, image-to-PDF conversion, PDF-to-image conversion, PDF-to-Word conversion, Word-to-PDF conversion, PDF-to-Excel conversion, Edit PDF (adding text, images, shapes, and freehand annotations), Document Scanning, PDF Organize (page rotate/reorder), PDF Watermark (adding text watermark and page numbers), PDF Lock/Unlock (password protection), and PDF Presenter (full-screen viewing mode) — are performed locally.\n\n"
                   "We do not upload your files or personal documents to any server. The information the app stores, entirely on your own device, includes:\n\n"
                   "• App settings (Light/Dark mode theme preferences) stored locally via 'shared_preferences'\n"
                   "• Recent Documents History: it stores the names and paths of files you create or modify, plus an app-private copy of those files, all only on your device. This list never leaves your device and can be cleared at any time (see Section 12).\n"
                   "• Ad-related identifiers collected by Google AdMob (see Section 4)\n\n"
                   "Document Scanner & Text Recognition (OCR): To convert physical documents to PDF and extract text for Word or Excel files, we use Google ML Kit Document Scanner and Text Recognition. These Machine Learning models run locally on your device. Your documents are NEVER sent to the cloud for text extraction.\n\n"
                   "PDF Password Protection: When you use the Lock PDF feature, you create a password that is applied directly to your PDF file using on-device encryption. We never see, store, or transmit this password — it exists only within the file you create and on your own device. If you forget this password, we cannot recover it for you.\n\n"
-                  "Photo/Image Access: When you use the Image to PDF feature, the app uses 'image_picker' to let you select photos from your device gallery. These images are processed entirely on your device and are NEVER uploaded, transmitted, or stored by us.\n\n"
+                  "Photo/Image Access: When you use the Image to PDF or Edit PDF feature, the app uses 'image_picker' to let you select photos from your device gallery. These images are processed entirely on your device and are NEVER uploaded, transmitted, or stored by us.\n\n"
                   "We do NOT upload, transmit, or have remote access to:\n"
                   "• Your PDF file contents\n"
                   "• Contact details, email addresses, or phone numbers\n"
-                  "• Photos or images beyond what you explicitly select for conversion",
+                  "• Photos or images beyond what you explicitly select for conversion or editing",
             ),
 
             // ───── SECTION 2 ─────
             _buildSection(
               context,
               "2. File Processing (Secure On-Device Processing)",
-              "To ensure your privacy and security, all PDF operations — including merging, splitting, compressing, scanning, and conversions (Word/Excel/Images) — occur locally on your mobile device. \n\n"
+              "To ensure your privacy and security, all PDF operations — including merging, splitting, compressing, editing (text, images, shapes, drawing), scanning, and conversions (Word/Excel/Images) — occur locally on your mobile device. \n\n"
                   "• NO CLOUD UPLOADS: Your files are NEVER uploaded to any remote server or third-party cloud service.\n"
                   "• ON-DEVICE AI/OCR: Our document scanning and optical character recognition (OCR) uses Google ML Kit which runs on your device without sending any document content to Google servers.\n"
                   "• NO DATA RETENTION: We do not store or keep copies of your documents on any server. Temporary working files are kept in the app's cache and are removed when no longer needed or by Android. A copy of each file you create is kept in the app's private storage so you can reopen it from Recent Documents. 'Remove from list' or 'Clear History' deletes these copies, and uninstalling the app removes everything.\n"

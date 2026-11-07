@@ -12,31 +12,92 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 class PdfToWordProvider extends ChangeNotifier {
   File? _selectedFile;
+  String? _selectedFileName;
   bool _isLoading = false;
   String? _statusMessage;
   double _progress = 0.0;
   bool _isCancelled = false;
   String? _extractedText;
+  String? _lastPageError;
 
   File? get selectedFile => _selectedFile;
+  String? get selectedFileName => _selectedFileName;
   bool get isLoading => _isLoading;
   String? get statusMessage => _statusMessage;
   double get progress => _progress;
   String? get extractedText => _extractedText;
 
   Future<void> pickFile() async {
-    final FilePickerResult? result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    final PlatformFile? pickedFile = result?.files.single;
-    if (pickedFile != null && pickedFile.path != null) {
-      _selectedFile = File(pickedFile.path!);
-      _statusMessage = "Selected: ${pickedFile.name}";
-      _progress = 0.0;
-      _extractedText = null;
+    try {
+      final FilePickerResult? result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      final PlatformFile? pickedFile = result?.files.single;
+      if (pickedFile != null) {
+        _selectedFileName = pickedFile.name;
+        final File? safeFile = await _getSafeFile(pickedFile);
+        if (safeFile != null) {
+          _selectedFile = safeFile;
+          _statusMessage = "Selected: ${pickedFile.name}";
+          _progress = 0.0;
+          _extractedText = null;
+          notifyListeners();
+        } else {
+          _selectedFile = null;
+          _selectedFileName = null;
+          _statusMessage = "Could not open selected file. Please select it again.";
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error picking file: $e");
+      _statusMessage = "Error selecting file: $e";
       notifyListeners();
     }
+  }
+
+  Future<File?> _getSafeFile(PlatformFile pickedFile) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      // Keep exact name or clean extension without timestamp prefix
+      final safeName = pickedFile.name.endsWith('.pdf') ? pickedFile.name : '${pickedFile.name}.pdf';
+      final tempPath = '${tempDir.path}/$safeName';
+
+      // 1. Check if direct physical path exists on disk
+      if (pickedFile.path != null &&
+          pickedFile.path!.isNotEmpty &&
+          !pickedFile.path!.startsWith('/document/')) {
+        final f = File(pickedFile.path!);
+        if (await f.exists()) {
+          try {
+            final bytes = await f.readAsBytes();
+            if (bytes.isNotEmpty) {
+              final tempFile = File(tempPath);
+              await tempFile.writeAsBytes(bytes);
+              return tempFile;
+            }
+          } catch (e) {
+            debugPrint("Direct file read failed: $e");
+          }
+        }
+      }
+
+      // 2. Read bytes via xFile (safely handles Android content:// and /document/ URIs via ContentResolver)
+      try {
+        final Uint8List bytes = await pickedFile.xFile.readAsBytes();
+        if (bytes.isNotEmpty) {
+          final tempFile = File(tempPath);
+          await tempFile.writeAsBytes(bytes);
+          return tempFile;
+        }
+      } catch (e) {
+        debugPrint("xFile.readAsBytes failed: $e");
+      }
+    } catch (e) {
+      debugPrint("Error preparing safe file: $e");
+    }
+    return null;
   }
 
   void cancel() {
@@ -47,11 +108,18 @@ class PdfToWordProvider extends ChangeNotifier {
   }
 
   Future<bool> extractAndSave(BuildContext context) async {
-    if (_selectedFile == null) return false;
+    if (_selectedFile == null || !await _selectedFile!.exists()) {
+      _selectedFile = null;
+      _isLoading = false;
+      _statusMessage = "Please select a valid PDF file first.";
+      notifyListeners();
+      return false;
+    }
 
     _isLoading = true;
     _progress = 0.0;
     _isCancelled = false;
+    _lastPageError = null;
     _statusMessage = "Initializing OCR Engine...";
     notifyListeners();
 
@@ -63,7 +131,12 @@ class PdfToWordProvider extends ChangeNotifier {
     StringBuffer extractedBuffer = StringBuffer();
 
     try {
-      doc = await pdf_renderer.PdfDocument.openData(await _selectedFile!.readAsBytes());
+      final Uint8List sourceBytes = await _selectedFile!.readAsBytes();
+      if (sourceBytes.length < 5 ||
+          String.fromCharCodes(sourceBytes.take(5)) != '%PDF-') {
+        throw const FormatException('The selected file is not a valid PDF.');
+      }
+      doc = await pdf_renderer.PdfDocument.openData(sourceBytes);
       final tempDir = await getTemporaryDirectory();
       final tempImagePath = "${tempDir.path}/ocr_temp_buffer.jpg";
       final imageFile = File(tempImagePath);
@@ -97,6 +170,7 @@ class PdfToWordProvider extends ChangeNotifier {
           }
         } catch (e) {
           debugPrint("Error processing page $i: $e");
+          _lastPageError = e.toString();
         } finally {
           await page.close();
         }
@@ -111,7 +185,13 @@ class PdfToWordProvider extends ChangeNotifier {
       final String finalEditedText = extractedBuffer.toString().trim();
       if (finalEditedText.isEmpty) {
         _isLoading = false;
-        _statusMessage = "No text could be recognized in the document.";
+        if (_lastPageError?.contains("optional module to be downloaded") ?? false) {
+          _statusMessage = "গুগল সার্ভিস থেকে প্রয়োজনীয় রিসোর্স ডাউনলোড হচ্ছে। দয়া করে ১-২ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।";
+        } else if (_lastPageError != null) {
+          _statusMessage = "OCR failed: $_lastPageError";
+        } else {
+          _statusMessage = "No text could be recognized in the document.";
+        }
         notifyListeners();
         return false;
       }
@@ -122,13 +202,29 @@ class PdfToWordProvider extends ChangeNotifier {
       // Run Document creation on a background isolate
       final Uint8List docxBytes = await compute(_generateDocxTask, finalEditedText);
 
-      // Save directly to application documents directory
+      // Save a local physical copy so OpenFilex and history always have a valid file path
       final appDir = await getApplicationDocumentsDirectory();
-      final String finalFilePath =
+      final String localFilePath =
           "${appDir.path}/OCR_Converted_${DateTime.now().millisecondsSinceEpoch}.docx";
+      final File localFile = File(localFilePath);
+      await localFile.writeAsBytes(docxBytes);
 
-      final File wordFile = File(finalFilePath);
-      await wordFile.writeAsBytes(docxBytes);
+      String? outputPath;
+      try {
+        outputPath = await FilePicker.saveFile(
+          dialogTitle: 'Save Word Document',
+          fileName: 'OCR_Converted_${DateTime.now().millisecondsSinceEpoch}.docx',
+          type: FileType.custom,
+          allowedExtensions: ['docx'],
+          bytes: docxBytes,
+        );
+      } catch (e) {
+        debugPrint("FilePicker.saveFile warning: $e");
+      }
+
+      final String finalPathToRecord = (outputPath != null && outputPath.isNotEmpty)
+          ? outputPath
+          : localFilePath;
 
       _isLoading = false;
       _statusMessage = "✅ Successfully saved!";
@@ -136,15 +232,29 @@ class PdfToWordProvider extends ChangeNotifier {
 
       if (context.mounted) {
         await Provider.of<FileHistoryProvider>(context, listen: false)
-            .addFile(finalFilePath, bytes: docxBytes);
-        await OpenFilex.open(finalFilePath);
+            .addFile(finalPathToRecord, bytes: docxBytes);
+
+        try {
+          final openResult = await OpenFilex.open(localFilePath);
+          if (openResult.type != ResultType.done) {
+            debugPrint("OpenFilex message: ${openResult.message}");
+          }
+        } catch (e) {
+          debugPrint("OpenFilex warning: $e");
+        }
       }
       return true;
 
     } catch (e) {
       debugPrint("OCR/Save DOCX Error: $e");
       _isLoading = false;
-      if (e.toString().contains("optional module to be downloaded")) {
+      final errStr = e.toString();
+      if (errStr.contains("PathNotFoundException") || errStr.contains("Cannot open file")) {
+        _selectedFile = null;
+        _statusMessage = "The selected file is inaccessible. Please tap 'Change' and select the PDF again.";
+      } else if (errStr.contains("PdfRendererException")) {
+        _statusMessage = "This PDF could not be opened. It may be password-protected or corrupted.";
+      } else if (errStr.contains("optional module to be downloaded")) {
         _statusMessage = "গুগল সার্ভিস থেকে প্রয়োজনীয় রিসোর্স ডাউনলোড হচ্ছে। দয়া করে ১-২ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।";
       } else {
         _statusMessage = "Error occurred: $e";
@@ -163,6 +273,7 @@ class PdfToWordProvider extends ChangeNotifier {
     _isLoading = true;
     _progress = 0.0;
     _isCancelled = false;
+    _lastPageError = null;
     _extractedText = null;
     _statusMessage = "Initializing OCR Engine...";
     notifyListeners();
@@ -174,7 +285,12 @@ class PdfToWordProvider extends ChangeNotifier {
     StringBuffer extractedBuffer = StringBuffer();
 
     try {
-      doc = await pdf_renderer.PdfDocument.openData(await _selectedFile!.readAsBytes());
+      final Uint8List sourceBytes = await _selectedFile!.readAsBytes();
+      if (sourceBytes.length < 5 ||
+          String.fromCharCodes(sourceBytes.take(5)) != '%PDF-') {
+        throw const FormatException('The selected file is not a valid PDF.');
+      }
+      doc = await pdf_renderer.PdfDocument.openData(sourceBytes);
       final tempDir = await getTemporaryDirectory();
       final tempImagePath = "${tempDir.path}/ocr_temp_buffer.jpg";
       final imageFile = File(tempImagePath);
@@ -207,6 +323,7 @@ class PdfToWordProvider extends ChangeNotifier {
           }
         } catch (e) {
           debugPrint("Error processing page $i: $e");
+          _lastPageError = e.toString();
         } finally {
           await page.close();
         }
@@ -221,7 +338,13 @@ class PdfToWordProvider extends ChangeNotifier {
       _isLoading = false;
       
       if (_extractedText!.isEmpty) {
-        _statusMessage = "No text could be recognized in the document.";
+        if (_lastPageError?.contains("optional module to be downloaded") ?? false) {
+          _statusMessage = "গুগল সার্ভিস থেকে প্রয়োজনীয় রিসোর্স ডাউনলোড হচ্ছে। দয়া করে ১-২ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।";
+        } else if (_lastPageError != null) {
+          _statusMessage = "OCR failed: $_lastPageError";
+        } else {
+          _statusMessage = "No text could be recognized in the document.";
+        }
       } else {
         _statusMessage = "Extraction Complete. Review your text.";
       }
@@ -232,7 +355,9 @@ class PdfToWordProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint("OCR Extraction Error: $e");
       _isLoading = false;
-      if (e.toString().contains("optional module to be downloaded")) {
+      if (e.toString().contains("PdfRendererException")) {
+        _statusMessage = "This PDF could not be opened. It may be password-protected or corrupted.";
+      } else if (e.toString().contains("optional module to be downloaded")) {
         _statusMessage = "গুগল সার্ভিস থেকে প্রয়োজনীয় রিসোর্স ডাউনলোড হচ্ছে। দয়া করে ১-২ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।";
       } else {
         _statusMessage = "Error occurred during extraction";
@@ -257,11 +382,27 @@ class PdfToWordProvider extends ChangeNotifier {
       final Uint8List docxBytes = await compute(_generateDocxTask, finalEditedText);
 
       final appDir = await getApplicationDocumentsDirectory();
-      final String finalFilePath =
+      final String localFilePath =
           "${appDir.path}/OCR_Converted_${DateTime.now().millisecondsSinceEpoch}.docx";
+      final File localFile = File(localFilePath);
+      await localFile.writeAsBytes(docxBytes);
 
-      final File wordFile = File(finalFilePath);
-      await wordFile.writeAsBytes(docxBytes);
+      String? outputPath;
+      try {
+        outputPath = await FilePicker.saveFile(
+          dialogTitle: 'Save Word Document',
+          fileName: 'OCR_Converted_${DateTime.now().millisecondsSinceEpoch}.docx',
+          type: FileType.custom,
+          allowedExtensions: ['docx'],
+          bytes: docxBytes,
+        );
+      } catch (e) {
+        debugPrint("FilePicker.saveFile warning: $e");
+      }
+
+      final String finalPathToRecord = (outputPath != null && outputPath.isNotEmpty)
+          ? outputPath
+          : localFilePath;
 
       _isLoading = false;
       _statusMessage = "✅ Successfully saved!";
@@ -271,8 +412,16 @@ class PdfToWordProvider extends ChangeNotifier {
         await Provider.of<FileHistoryProvider>(
           context,
           listen: false,
-        ).addFile(finalFilePath, bytes: docxBytes);
-        await OpenFilex.open(finalFilePath);
+        ).addFile(finalPathToRecord, bytes: docxBytes);
+
+        try {
+          final openResult = await OpenFilex.open(localFilePath);
+          if (openResult.type != ResultType.done) {
+            debugPrint("OpenFilex message: ${openResult.message}");
+          }
+        } catch (e) {
+          debugPrint("OpenFilex warning: $e");
+        }
       }
       return true;
     } catch (e) {
@@ -286,11 +435,13 @@ class PdfToWordProvider extends ChangeNotifier {
 
   void reset() {
     _selectedFile = null;
+    _selectedFileName = null;
     _isLoading = false;
     _statusMessage = null;
     _progress = 0.0;
     _isCancelled = false;
     _extractedText = null;
+    _lastPageError = null;
     notifyListeners();
   }
 }

@@ -8,12 +8,14 @@ import 'package:pdf_toolkit/provider/pdf_page_delete_provider/pdf_page_delete_pr
 import 'package:pdf_toolkit/provider/pdf_split_provider/pdf_split_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_to_image_provider/pdf_to_image_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_to_word_provider/pdf_to_word_provider.dart';
+import 'package:pdf_toolkit/provider/word_to_pdf_provider/word_to_pdf_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_to_excel_provider/pdf_to_excel_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_presenter_provider/pdf_presenter_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_security_provider/pdf_security_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_organize_provider/pdf_organize_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_watermark_provider/pdf_watermark_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_scanner_provider/pdf_scanner_provider.dart';
+import 'package:pdf_toolkit/provider/pdf_edit_provider/pdf_edit_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pdf_toolkit/provider/theme_provider.dart';
 import 'package:pdf_toolkit/screen/splash_screen.dart';
@@ -127,6 +129,7 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
         ChangeNotifierProvider(create: (_) => PdfPageDeleteProvider()),
         ChangeNotifierProvider(create: (_) => PdfCompressorProvider()),
         ChangeNotifierProvider(create: (_) => PdfToWordProvider()),
+        ChangeNotifierProvider(create: (_) => WordToPdfProvider()),
         ChangeNotifierProvider(create: (_) => PdfToExcelProvider()),
         ChangeNotifierProvider(create: (_) => PdfPresenterProvider()),
         ChangeNotifierProvider(create: (_) => FileHistoryProvider()),
@@ -134,6 +137,7 @@ class _PdfToolKitAppState extends State<PdfToolKitApp> {
         ChangeNotifierProvider(create: (_) => PdfOrganizeProvider()),
         ChangeNotifierProvider(create: (_) => PdfWatermarkProvider()),
         ChangeNotifierProvider(create: (_) => PdfScannerProvider()),
+        ChangeNotifierProvider(create: (_) => PdfEditProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

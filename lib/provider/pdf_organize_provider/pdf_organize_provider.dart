@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf_toolkit/provider/file_history_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -46,18 +48,27 @@ class PdfOrganizeProvider extends ChangeNotifier {
   int get totalPages => _totalPages;
   List<OrganizePageData> get pages => _pages;
 
-  Future<void> pickFile() async {
+  Future<bool> pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
-      if (result != null && result.files.single.path != null) {
+      final pickedFile = result?.files.single;
+      if (pickedFile != null) {
         _isLoading = true;
         _statusMessage = "Reading PDF...";
         notifyListeners();
 
-        _selectedFile = File(result.files.single.path!);
+        final File? safeFile = await _getSafeFile(pickedFile);
+        if (safeFile == null) {
+          _isLoading = false;
+          _statusMessage = "Could not open selected file.";
+          notifyListeners();
+          return false;
+        }
+
+        _selectedFile = safeFile;
         
         final rotations = await compute(_extractPageRotationsTask, _selectedFile!.path);
         _totalPages = rotations.length;
@@ -75,13 +86,51 @@ class PdfOrganizeProvider extends ChangeNotifier {
         _isLoading = false;
         _statusMessage = null;
         notifyListeners();
+        return true;
       }
     } catch (e) {
       debugPrint("Error picking file: $e");
       _isLoading = false;
-      _statusMessage = null;
+      _statusMessage = "Error reading PDF file.";
       notifyListeners();
     }
+    return false;
+  }
+
+  Future<File?> _getSafeFile(PlatformFile pickedFile) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final tempPath =
+          '${tempDir.path}/temp_org_${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}';
+
+      if (pickedFile.path != null &&
+          pickedFile.path!.isNotEmpty &&
+          !pickedFile.path!.startsWith('/document/')) {
+        final f = File(pickedFile.path!);
+        if (await f.exists()) {
+          try {
+            final bytes = await f.readAsBytes();
+            if (bytes.isNotEmpty) {
+              final tempFile = File(tempPath);
+              await tempFile.writeAsBytes(bytes);
+              return tempFile;
+            }
+          } catch (_) {}
+        }
+      }
+
+      try {
+        final Uint8List bytes = await pickedFile.xFile.readAsBytes();
+        if (bytes.isNotEmpty) {
+          final tempFile = File(tempPath);
+          await tempFile.writeAsBytes(bytes);
+          return tempFile;
+        }
+      } catch (_) {}
+    } catch (e) {
+      debugPrint("Error preparing safe file: $e");
+    }
+    return null;
   }
 
   void reorderPages(int oldIndex, int newIndex) {

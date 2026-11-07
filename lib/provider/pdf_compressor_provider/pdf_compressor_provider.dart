@@ -53,10 +53,15 @@ class PdfCompressorProvider extends ChangeNotifier {
 
     Directory? tempDir;
     try {
-      final String inputPath = _selectedFile!.path;
+      final Uint8List sourceBytes = await _selectedFile!.readAsBytes();
+      if (sourceBytes.length < 5 || String.fromCharCodes(sourceBytes.take(5)) != '%PDF-') {
+        throw const FormatException('The selected file is not a valid PDF.');
+      }
       final double qualityValue = _quality;
 
-      final document = await renderer.PdfDocument.openFile(inputPath);
+      // Open from bytes so Android file-picker/cache paths do not depend on a
+      // native file handle remaining valid after the picker closes.
+      final document = await renderer.PdfDocument.openData(sourceBytes);
       final List<String> tempImagePaths = [];
 
       // Create a unique temporary directory for this session

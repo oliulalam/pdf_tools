@@ -9,13 +9,15 @@
   "image_to_pdf": "Image to PDF",
   "pdf_to_image": "PDF to Image",
   "pdf_to_word": "PDF to Word",
+  "word_to_pdf": "Word to PDF",
   "pdf_to_excel": "PDF to Excel",
   "compress_pdf": "Compress PDF",
-  "delete_pages": "Delete Pages",
+  "delete_pages": "Remove Pages",
   "pdf_presenter": "PDF Presenter",
   "language": "Language",
   "lock_unlock": "Lock/Unlock",
   "organize_pages": "Organize Pages",
   "watermark": "Watermark & Number",
-  "scan_document": "Scan Document"
+  "scan_document": "Scan Document",
+  "edit_pdf": "Edit PDF"
 }

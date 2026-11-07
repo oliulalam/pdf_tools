@@ -31,6 +31,10 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
 
     return Consumer<PdfToWordProvider>(
       builder: (context, provider, child) {
+        if (provider.extractedText != null && _reviewController.text.isEmpty) {
+          _reviewController.text = provider.extractedText!;
+        }
+
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: const ToolAppBar(),
@@ -39,10 +43,12 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(0),
-                  child: _buildSelectionPhase(context, theme, isDark, provider),
+                  child: provider.extractedText != null
+                      ? _buildReviewPhase(context, theme, provider)
+                      : _buildSelectionPhase(context, theme, isDark, provider),
                 ),
               ),
-              if (provider.selectedFile == null)
+              if (provider.selectedFile == null && provider.extractedText == null)
                 const BannerAdWidget(placement: AdPlacement.tools),
             ],
           ),
@@ -78,6 +84,7 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
           if (hasFile)
             SelectedFileCard(
               file: provider.selectedFile!,
+              overrideName: provider.selectedFileName,
               onChange: provider.isLoading ? null : () => provider.pickFile(),
               badgeColor: Colors.blue[700]!,
             )
@@ -150,7 +157,9 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "${provider.selectedFile!.path.split(Platform.pathSeparator).last.replaceAll('.pdf', '')}.docx",
+                            provider.selectedFileName != null
+                                ? "${provider.selectedFileName!.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '')}.docx"
+                                : "${provider.selectedFile!.path.split(Platform.pathSeparator).last.replaceAll('.pdf', '')}.docx",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -391,16 +400,19 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 100),
+            const SizedBox(height: 20),
             if (!provider.isLoading)
               BottomActionBar(
-                actionText: "Extract Text & Save",
+                actionText: "Convert & Review",
                 isLoading: provider.isLoading,
                 color: Colors.blue[700]!,
                 onAction: () async {
-                  final success = await provider.extractAndSave(context);
-                  if (success) {
-                    AdHelper.showInterstitialAd(() {});
+                  final success = await provider.extractTextForReview();
+                  if (!context.mounted) return;
+                  if (!success && provider.statusMessage != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(provider.statusMessage!)),
+                    );
                   }
                 },
               ),
@@ -469,53 +481,25 @@ class _PdfToWordScreenState extends State<PdfToWordScreen> {
             child: Center(child: CircularProgressIndicator()),
           )
         else
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      provider.reset();
-                      _reviewController.clear();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.blue[700]!),
-                      foregroundColor: Colors.blue[700],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text("Start Over"),
-                  ),
+          BottomActionBar(
+            actionText: "Save as Word",
+            isLoading: provider.isLoading,
+            color: Colors.blue[700]!,
+            onAction: () async {
+              final success = await provider.saveWordDocument(
+                context,
+                _reviewController.text,
+              );
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(provider.statusMessage ?? ''),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton.icon(
-                    onPressed: () async {
-                      final success = await provider.saveWordDocument(
-                        context,
-                        _reviewController.text,
-                      );
-                      if (success) {
-                        AdHelper.showInterstitialAd(() {});
-                      }
-                    },
-                    icon: const Icon(Icons.save_alt),
-                    label: const Text("Save as Word"),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.blue[700],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              );
+              if (success) {
+                AdHelper.showInterstitialAd(() {});
+              }
+            },
           ),
       ],
     );

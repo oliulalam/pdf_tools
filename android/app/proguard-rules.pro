@@ -17,6 +17,10 @@
 # Google ML Kit (Vision & Text Recognition)
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.android.gms.vision.** { *; }
+-dontwarn com.google.android.play.core.**
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**
 
 # Syncfusion & PDF Packages
 -dontwarn com.syncfusion.**

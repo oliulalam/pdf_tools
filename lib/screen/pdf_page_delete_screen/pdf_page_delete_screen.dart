@@ -18,6 +18,7 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
   final Set<int> _selectedPages = {};
   PdfDocument? _pdfDocument;
   final Map<int, Future<PdfPageImage?>> _pageThumbnailsCache = {};
+  Future<void> _renderLock = Future.value();
 
   void _loadPdfDocument(String path) async {
     try {
@@ -25,6 +26,7 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
       if (mounted) {
         setState(() {
           _pageThumbnailsCache.clear();
+          _renderLock = Future.value();
           _pdfDocument = null;
         });
       }
@@ -47,27 +49,30 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
       return _pageThumbnailsCache[pageNum]!;
     }
 
-    final future = () async {
+    final future = _renderLock.then((_) async {
       if (_pdfDocument == null) return null;
       PdfPage? page;
       try {
         page = await _pdfDocument!.getPage(pageNum);
-        // Render at a smaller resolution to save memory (e.g., max width 200)
         final double aspectRatio = page.width / page.height;
-        final int targetWidth = 200;
-        final int targetHeight = (targetWidth / aspectRatio).round();
-        
+        final int targetWidth = 160;
+        final int targetHeight = (targetWidth / aspectRatio).round().clamp(80, 240);
+
         final image = await page.render(
           width: targetWidth.toDouble(),
           height: targetHeight.toDouble(),
           format: PdfPageImageFormat.jpeg,
         );
         return image;
+      } catch (e) {
+        debugPrint("Error rendering thumbnail for page $pageNum: $e");
+        return null;
       } finally {
         await page?.close();
       }
-    }();
+    });
 
+    _renderLock = future.then((_) {});
     _pageThumbnailsCache[pageNum] = future;
     return future;
   }
@@ -282,6 +287,8 @@ class _PdfPageDeleteScreenState extends State<PdfPageDeleteScreen> {
                                                               snapshot.data!.bytes,
                                                               fit: BoxFit.contain,
                                                             );
+                                                          } else if (snapshot.connectionState == ConnectionState.done && snapshot.data == null) {
+                                                            return const Icon(Icons.description_outlined, color: Colors.black26, size: 36);
                                                           }
                                                           return const Center(child: CircularProgressIndicator(strokeWidth: 2));
                                                         },

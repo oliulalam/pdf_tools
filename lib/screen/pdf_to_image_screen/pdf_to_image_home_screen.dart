@@ -157,7 +157,11 @@ class _PdfToImageHomeScreenState extends State<PdfToImageHomeScreen> {
       }
       
       if (mounted) {
-        await context.read<FileHistoryProvider>().addFile(outputPath, bytes: zipBytes);
+        await context.read<FileHistoryProvider>().addFile(
+          outputPath,
+          bytes: zipBytes,
+          preferredFileName: 'PDF_Images.zip',
+        );
       }
 
       return true;

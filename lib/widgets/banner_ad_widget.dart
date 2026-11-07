@@ -18,14 +18,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   bool _isLoaded = false;
   AdSize? _adSize;
   bool _isLoading = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_adSize == null && !_isLoading && AdHelper.adsReady.value) {
-      _loadAd();
-    }
-  }
+  double? _lastWidth;
 
   @override
   void initState() {
@@ -35,7 +28,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   void _onAdsReadyChanged() {
     if (AdHelper.adsReady.value && _bannerAd == null && !_isLoading && mounted) {
-      _loadAd();
+      if (_lastWidth != null) {
+        _loadAd(_lastWidth!);
+      }
     }
   }
 
@@ -50,15 +45,16 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     }
   }
 
-  Future<void> _loadAd() async {
+  Future<void> _loadAd(double width) async {
     _isLoading = true;
-    
-    // Get anchored adaptive banner size
-    final screenWidth = MediaQuery.of(context).size.width.truncate();
-    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(screenWidth);
-    
+    _lastWidth = width;
+
+    final int adWidth = width.clamp(280.0, 1200.0).truncate();
+    final Orientation orientation = MediaQuery.of(context).orientation;
+    final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSizeWithOrientation(orientation, adWidth);
+
     if (!mounted) return;
-    
+
     _adSize = size ?? AdSize.banner;
 
     _bannerAd = BannerAd(
@@ -96,52 +92,63 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_adSize == null) {
-      return const SizedBox.shrink();
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
 
-    if (!_isLoaded || _bannerAd == null) {
-      // Reserve exact height so layout doesn't jump
-      return SafeArea(
-        top: false,
-        bottom: true,
-        minimum: const EdgeInsets.only(bottom: 8.0),
-        child: SizedBox(
-          width: double.infinity,
-          height: _adSize!.height.toDouble() + 30, // height + ad label space
-        ),
-      );
-    }
+        if (_bannerAd == null && !_isLoading && AdHelper.adsReady.value && availableWidth > 0) {
+          _loadAd(availableWidth);
+        }
 
-    return SafeArea(
-      top: false,
-      bottom: true,
-      minimum: const EdgeInsets.only(bottom: 8.0),
-      child: Container(
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.only(top: 8, bottom: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Advertisement",
-              style: TextStyle(
-                color: Theme.of(context).hintColor.withAlpha(180),
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 8), // Increased spacing so test ad badge doesn't overlap
-            SizedBox(
+        if (_adSize == null) {
+          return const SizedBox.shrink();
+        }
+
+        if (!_isLoaded || _bannerAd == null) {
+          return SafeArea(
+            top: false,
+            bottom: true,
+            minimum: const EdgeInsets.only(bottom: 8.0),
+            child: SizedBox(
               width: double.infinity,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
+              height: _adSize!.height.toDouble() + 24,
             ),
-          ],
-        ),
-      ),
+          );
+        }
+
+        return SafeArea(
+          top: false,
+          bottom: true,
+          minimum: const EdgeInsets.only(bottom: 8.0),
+          child: Container(
+            width: double.infinity,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Advertisement",
+                  style: TextStyle(
+                    color: Theme.of(context).hintColor.withAlpha(180),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Center(
+                  child: SizedBox(
+                    width: _bannerAd!.size.width.toDouble(),
+                    height: _bannerAd!.size.height.toDouble(),
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

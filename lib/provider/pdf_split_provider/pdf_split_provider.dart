@@ -66,6 +66,13 @@ class PdfSplitProvider extends ChangeNotifier {
     _safeNotify();
   }
 
+  void clearGeneratedFiles() {
+    if (_generatedFiles.isNotEmpty) {
+      _generatedFiles = [];
+      _safeNotify();
+    }
+  }
+
   List<List<int>>? _parseRangeGroups(String input, int total) {
     final List<List<int>> groups = [];
     if (input.trim().isEmpty) return groups;
@@ -114,17 +121,56 @@ class PdfSplitProvider extends ChangeNotifier {
 
       final PlatformFile? pickedFile = result?.files.single;
 
-      if (pickedFile != null && pickedFile.path != null) {
-        _pdfPath = pickedFile.path;
-        _pdfName = pickedFile.name;
-        _totalPages = await _getPageCountFromPath(_pdfPath!);
-        _generatedFiles = [];
-        rangeController.clear();
-        _safeNotify();
+      if (pickedFile != null) {
+        final File? safeFile = await _getSafeFile(pickedFile);
+        if (safeFile != null) {
+          _pdfPath = safeFile.path;
+          _pdfName = pickedFile.name;
+          _totalPages = await _getPageCountFromPath(_pdfPath!);
+          _generatedFiles = [];
+          rangeController.clear();
+          _safeNotify();
+        }
       }
     } catch (e) {
       debugPrint("PDF selection error: $e");
     }
+  }
+
+  Future<File?> _getSafeFile(PlatformFile pickedFile) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final tempPath =
+          '${tempDir.path}/temp_split_${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}';
+
+      if (pickedFile.path != null &&
+          pickedFile.path!.isNotEmpty &&
+          !pickedFile.path!.startsWith('/document/')) {
+        final f = File(pickedFile.path!);
+        if (await f.exists()) {
+          try {
+            final bytes = await f.readAsBytes();
+            if (bytes.isNotEmpty) {
+              final tempFile = File(tempPath);
+              await tempFile.writeAsBytes(bytes);
+              return tempFile;
+            }
+          } catch (_) {}
+        }
+      }
+
+      try {
+        final Uint8List bytes = await pickedFile.xFile.readAsBytes();
+        if (bytes.isNotEmpty) {
+          final tempFile = File(tempPath);
+          await tempFile.writeAsBytes(bytes);
+          return tempFile;
+        }
+      } catch (_) {}
+    } catch (e) {
+      debugPrint("Error preparing safe file: $e");
+    }
+    return null;
   }
 
   Future<bool> splitSelectedPdf(BuildContext context, {bool splitIntoParts = false}) async {
@@ -222,90 +268,144 @@ class PdfSplitProvider extends ChangeNotifier {
     return compute(_countPagesTask, path);
   }
 
-  Future<bool> saveFilesSmart(BuildContext context) async {
+  Future<bool> saveFilesSmart(BuildContext context, {bool showToast = false}) async {
     if (_generatedFiles.isEmpty) return false;
-    
+
     // If only one file, use direct save picker
     if (_generatedFiles.length == 1) {
       try {
         final String sourcePath = _generatedFiles.first;
         final Uint8List bytes = await File(sourcePath).readAsBytes();
 
-        final String? outputPath = await FilePicker.saveFile(
-          dialogTitle: 'Select Save Location',
-          fileName: 'Split_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
-          type: FileType.custom,
-          allowedExtensions: ['pdf'],
-          bytes: bytes,
-        );
+        String? outputPath;
+        try {
+          outputPath = await FilePicker.saveFile(
+            dialogTitle: 'Select Save Location',
+            fileName: 'Split_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+            type: FileType.custom,
+            allowedExtensions: ['pdf'],
+            bytes: bytes,
+          );
+        } catch (e) {
+          debugPrint("FilePicker.saveFile warning: $e");
+        }
 
-        if (outputPath != null && context.mounted) {
-          await context.read<FileHistoryProvider>().addFile(outputPath, bytes: bytes);
-          _setStatus('');
+        // If user cancelled save dialog or backed out
+        if (outputPath == null || outputPath.isEmpty) {
+          _setStatus('Save cancelled');
+          return false;
+        }
+
+        if (!outputPath.startsWith('/document/')) {
+          try {
+            final File outFile = File(outputPath);
+            if (!await outFile.exists() || (await outFile.length()) == 0) {
+              await outFile.writeAsBytes(bytes);
+            }
+          } catch (e) {
+            debugPrint("Writing to physical outputPath warning: $e");
+          }
+        }
+
+        if (context.mounted) {
+          await context
+              .read<FileHistoryProvider>()
+              .addFile(outputPath, bytes: bytes);
+          _setStatus('Saved successfully!');
+          if (showToast) {
+            _showToast("PDF saved successfully", Colors.green);
+          }
           return true;
         }
         return false;
       } catch (e) {
+        debugPrint("Single file save error: $e");
         if (context.mounted) {
           _setStatus('');
         }
         return false;
       }
     } else {
-      // If multiple files (Split into parts), save as a ZIP file like pdf to image
+      // If multiple files (Split into parts), create ZIP cleanly in memory with top-level basenames
       try {
-        _setStatus('Zipping files...');
-        final tempDir = await getTemporaryDirectory();
-        final workingDir = Directory(
-          '${tempDir.path}/zip_out_${DateTime.now().millisecondsSinceEpoch}',
-        );
-        await workingDir.create(recursive: true);
+        _setStatus('Creating ZIP with ${_generatedFiles.length} PDF files...');
 
-        final tempZipPath = '${workingDir.path}/split_parts.zip';
-
-        final encoder = ZipFileEncoder();
-        encoder.create(tempZipPath);
-
-        for (var sourcePath in _generatedFiles) {
+        final archive = Archive();
+        for (int i = 0; i < _generatedFiles.length; i++) {
+          final sourcePath = _generatedFiles[i];
           final file = File(sourcePath);
           if (await file.exists()) {
-            encoder.addFile(file);
+            final bytes = await file.readAsBytes();
+            final filename = p.basename(sourcePath);
+            archive.addFile(ArchiveFile(filename, bytes.length, bytes));
           }
         }
-        encoder.close();
 
-        final sourceZip = File(tempZipPath);
-        final zipBytes = await sourceZip.readAsBytes();
+        final zipData = ZipEncoder().encode(archive);
+        final Uint8List zipBytes = Uint8List.fromList(zipData);
 
-        final String? outputPath = await FilePicker.saveFile(
-          dialogTitle: 'Select where you want to save',
-          fileName: 'split_pdf_parts_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.zip',
-          type: FileType.custom,
-          allowedExtensions: ['zip'],
-          bytes: zipBytes,
-        );
+        String? outputPath;
+        try {
+          outputPath = await FilePicker.saveFile(
+            dialogTitle: 'Select where you want to save',
+            fileName:
+                'split_pdf_parts_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.zip',
+            type: FileType.custom,
+            allowedExtensions: ['zip'],
+            bytes: zipBytes,
+          );
+        } catch (e) {
+          debugPrint("FilePicker.saveFile warning: $e");
+        }
 
-        if (outputPath != null) {
-          if (context.mounted) {
-            await context.read<FileHistoryProvider>().addFile(outputPath, bytes: zipBytes);
-            _showToast("Files saved successfully as ZIP", Colors.green);
-          }
-          _setStatus('');
-          if (await workingDir.exists()) await workingDir.delete(recursive: true);
-          return true;
-        } else {
-          if (await workingDir.exists()) await workingDir.delete(recursive: true);
-          _setStatus('');
+        // If user cancelled save dialog or backed out
+        if (outputPath == null || outputPath.isEmpty) {
+          _setStatus('Save cancelled');
           return false;
         }
+
+        if (!outputPath.startsWith('/document/')) {
+          try {
+            final File outFile = File(outputPath);
+            if (!await outFile.exists() || (await outFile.length()) == 0) {
+              await outFile.writeAsBytes(zipBytes);
+            }
+          } catch (e) {
+            debugPrint("Writing to physical outputPath warning: $e");
+          }
+        }
+
+        if (context.mounted) {
+          await context
+              .read<FileHistoryProvider>()
+              .addFile(outputPath, bytes: zipBytes);
+          if (showToast) {
+            _showToast(
+                "${_generatedFiles.length} PDF files saved successfully in ZIP",
+                Colors.green);
+          }
+        }
+        _setStatus('Saved successfully!');
+        return true;
       } catch (e) {
         debugPrint("Multi-save error: $e");
         if (context.mounted) {
-          _showToast("Failed to save ZIP file", Colors.red);
+          _showToast("Failed to save ZIP file: $e", Colors.red);
         }
         _setStatus('');
         return false;
       }
+    }
+  }
+
+  void showSuccessToast() {
+    if (_generatedFiles.isEmpty) return;
+    if (_generatedFiles.length == 1) {
+      _showToast("PDF saved successfully", Colors.green);
+    } else {
+      _showToast(
+          "${_generatedFiles.length} PDF files saved successfully in ZIP",
+          Colors.green);
     }
   }
 

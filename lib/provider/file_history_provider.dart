@@ -25,7 +25,7 @@ class FileHistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> addFile(String path, {Uint8List? bytes}) async {
+  Future<String?> addFile(String path, {Uint8List? bytes, String? preferredFileName}) async {
     await _ready;
     String? finalPath;
 
@@ -36,11 +36,27 @@ class FileHistoryProvider extends ChangeNotifier {
         await docsDir.create(recursive: true);
       }
 
+      var rawName = (preferredFileName != null && preferredFileName.isNotEmpty)
+          ? preferredFileName
+          : p.basename(path);
+
+      // If rawName is purely numeric (e.g. 3313 from SAF URI), give it a clean document title
+      final baseNoExt = p.basenameWithoutExtension(rawName);
+      final rawExt = p.extension(rawName).isNotEmpty
+          ? p.extension(rawName)
+          : (p.extension(path).isNotEmpty ? p.extension(path) : '.pdf');
+
+      if (RegExp(r'^\d+$').hasMatch(baseNoExt)) {
+        rawName = 'Document_$baseNoExt$rawExt';
+      } else if (!rawName.contains('.')) {
+        rawName = '$rawName$rawExt';
+      }
+
+      final originalName = rawName.replaceAll(RegExp(r'[^\w\s.-]'), '');
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
+      final permanentPath = '${docsDir.path}/$fileName';
+
       if (bytes != null) {
-        // Write fresh bytes to a new private file
-        final originalName = p.basename(path).replaceAll(RegExp(r'[^a-zA-Z0-9.\-_]'), '_');
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
-        final permanentPath = '${docsDir.path}/$fileName';
         final permanentFile = File(permanentPath);
         await permanentFile.writeAsBytes(bytes);
         finalPath = permanentPath;
@@ -48,16 +64,13 @@ class FileHistoryProvider extends ChangeNotifier {
         final file = File(path);
         if (await file.exists()) {
           if (path.startsWith(docsDir.path)) {
-            // Already inside PDF_Quant_Documents, use as is
             finalPath = path;
           } else {
-            // Copy it to PDF_Quant_Documents
-            final originalName = p.basename(path).replaceAll(RegExp(r'[^a-zA-Z0-9.\-_]'), '_');
-            final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
-            final permanentPath = '${docsDir.path}/$fileName';
             await file.copy(permanentPath);
             finalPath = permanentPath;
           }
+        } else {
+          finalPath = permanentPath;
         }
       }
     } catch (e) {

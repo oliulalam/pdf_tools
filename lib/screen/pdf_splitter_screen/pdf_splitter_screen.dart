@@ -62,7 +62,10 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => _splitIntoParts = false),
+                                onTap: () {
+                                  setState(() => _splitIntoParts = false);
+                                  provider.clearGeneratedFiles();
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
@@ -132,7 +135,10 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => _splitIntoParts = true),
+                                onTap: () {
+                                  setState(() => _splitIntoParts = true);
+                                  provider.clearGeneratedFiles();
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
@@ -276,6 +282,7 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                             child: TextField(
                               controller: provider.rangeController,
                               enabled: !provider.isLoading,
+                              onChanged: (_) => provider.clearGeneratedFiles(),
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                               ),
@@ -312,6 +319,9 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                         ),
                         SelectedFileCard(
                           file: File(provider.generatedFiles.first),
+                          overrideName: provider.generatedFiles.length > 1
+                              ? "split_pdf_parts_${provider.generatedFiles.length}_files.zip"
+                              : null,
                           badgeText: "${provider.generatedFiles.length} PDF${provider.generatedFiles.length > 1 ? 's' : ''}",
                           badgeColor: Colors.redAccent,
                         ),
@@ -386,9 +396,14 @@ class _PdfSplitterScreenState extends State<PdfSplitterScreen> {
                   isLoading: provider.isLoading,
                   color: Colors.redAccent,
                   onAction: () async {
-                    final success = await provider.saveFilesSmart(context);
+                    final success =
+                        await provider.saveFilesSmart(context, showToast: false);
                     if (success) {
-                      AdHelper.showInterstitialAd(() {});
+                      AdHelper.showInterstitialAd(() {
+                        if (context.mounted) {
+                          provider.showSuccessToast();
+                        }
+                      });
                     }
                   },
                 ),

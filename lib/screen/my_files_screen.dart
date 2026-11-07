@@ -127,9 +127,6 @@ class _MyFilesScreenState extends State<MyFilesScreen> {
                 }).toList();
 
                 displayedFiles.sort((a, b) {
-                  final fileA = File(a);
-                  final fileB = File(b);
-
                   if (_sortOption == SortOption.nameAsc ||
                       _sortOption == SortOption.nameDesc) {
                     final nameA = a.split(Platform.pathSeparator).last.toLowerCase();
@@ -268,9 +265,55 @@ class _FileItemCardState extends State<_FileItemCard> {
     );
   }
 
+  IconData _getFileIcon(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'zip':
+        return Icons.folder_zip_rounded;
+      case 'xlsx':
+      case 'xls':
+      case 'csv':
+        return Icons.table_chart_rounded;
+      case 'docx':
+      case 'doc':
+        return Icons.description_rounded;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+        return Icons.image_rounded;
+      default:
+        return Icons.picture_as_pdf_rounded;
+    }
+  }
+
+  Color _getFileColor(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'zip':
+        return Colors.amber[800]!;
+      case 'xlsx':
+      case 'xls':
+      case 'csv':
+        return Colors.green[700]!;
+      case 'docx':
+      case 'doc':
+        return Colors.blue[800]!;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+        return Colors.teal;
+      default:
+        return Colors.redAccent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final file = File(widget.path);
+    final fileName = displayFileName(widget.path);
+    final extStr = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : p.extension(widget.path).replaceAll('.', '').toLowerCase();
+    final fileIcon = _getFileIcon(extStr);
+    final fileColor = _getFileColor(extStr);
 
     return FutureBuilder<FileStat>(
       future: _statFuture,
@@ -282,14 +325,13 @@ class _FileItemCardState extends State<_FileItemCard> {
           return const SizedBox.shrink();
         }
 
-        final fileName = displayFileName(widget.path);
         String subtitle = "Loading...";
 
         if (snapshot.hasData) {
-          final size = (snapshot.data!.size / 1024).toStringAsFixed(1);
+          final sizeKb = (snapshot.data!.size / 1024).toStringAsFixed(1);
           final date = DateFormat('dd MMM yyyy, hh:mm a')
               .format(snapshot.data!.modified);
-          subtitle = "$size KB • $date";
+          subtitle = "${extStr.toUpperCase()} • $sizeKb KB • $date";
         }
 
         return Card(
@@ -306,8 +348,8 @@ class _FileItemCardState extends State<_FileItemCard> {
                 vertical: 8,
               ),
               leading: CircleAvatar(
-                backgroundColor: Colors.orangeAccent,
-                child: Icon(p.extension(widget.path).toLowerCase() == '.pdf' ? Icons.picture_as_pdf_rounded : Icons.insert_drive_file_rounded, color: Colors.white),
+                backgroundColor: fileColor.withAlpha(30),
+                child: Icon(fileIcon, color: fileColor),
               ),
               title: Text(
                 fileName,

@@ -19,6 +19,7 @@ import 'package:pdf_toolkit/provider/pdf_page_delete_provider/pdf_page_delete_pr
 import 'package:pdf_toolkit/provider/pdf_split_provider/pdf_split_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_to_image_provider/pdf_to_image_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_to_word_provider/pdf_to_word_provider.dart';
+import 'package:pdf_toolkit/provider/word_to_pdf_provider/word_to_pdf_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_to_excel_provider/pdf_to_excel_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_presenter_provider/pdf_presenter_provider.dart';
 
@@ -31,6 +32,7 @@ import 'package:pdf_toolkit/screen/pdf_page_delete_screen/pdf_page_delete_screen
 import 'package:pdf_toolkit/screen/pdf_splitter_screen/pdf_splitter_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_to_image_screen/pdf_to_image_home_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_to_word_screen/pdf_to_word_screen.dart';
+import 'package:pdf_toolkit/screen/word_to_pdf_screen/word_to_pdf_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_to_excel_screen/pdf_to_excel_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_presenter_screen/pdf_presenter_screen.dart';
 import 'package:pdf_toolkit/screen/pdf_security_screen/pdf_security_screen.dart';
@@ -43,6 +45,8 @@ import 'package:pdf_toolkit/provider/pdf_security_provider/pdf_security_provider
 import 'package:pdf_toolkit/provider/pdf_organize_provider/pdf_organize_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_watermark_provider/pdf_watermark_provider.dart';
 import 'package:pdf_toolkit/provider/pdf_scanner_provider/pdf_scanner_provider.dart';
+import 'package:pdf_toolkit/provider/pdf_edit_provider/pdf_edit_provider.dart';
+import 'package:pdf_toolkit/screen/pdf_edit_screen/pdf_edit_screen.dart';
 
 // Utils
 import 'package:pdf_toolkit/utils/ad_helper.dart';
@@ -243,7 +247,7 @@ class _HomeTabState extends State<_HomeTab> {
       ),
       PdfTool(
         title: "delete_pages".tr(),
-        subtitle: "Delete pages you choose",
+        subtitle: "Remove pages you choose",
         icon: Icons.delete_outline,
         color: Colors.pinkAccent,
         onTap: () async {
@@ -278,6 +282,19 @@ class _HomeTabState extends State<_HomeTab> {
             MaterialPageRoute(builder: (_) => const PdfToWordScreen()),
           );
           if (mounted) context.read<PdfToWordProvider>().reset();
+        },
+      ),
+      PdfTool(
+        title: "word_to_pdf".tr(),
+        subtitle: "Convert DOCX to PDF",
+        icon: Icons.article_rounded,
+        color: Colors.blue[800]!,
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const WordToPdfScreen()),
+          );
+          if (mounted) context.read<WordToPdfProvider>().reset();
         },
       ),
       PdfTool(
@@ -330,6 +347,19 @@ class _HomeTabState extends State<_HomeTab> {
             MaterialPageRoute(builder: (_) => const PdfWatermarkScreen()),
           );
           if (mounted) context.read<PdfWatermarkProvider>().reset();
+        },
+      ),
+      PdfTool(
+        title: "edit_pdf".tr(),
+        subtitle: "Add Text, Shapes & Drawing",
+        icon: Icons.edit_note_rounded,
+        color: Colors.purple[700]!,
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PdfEditScreen()),
+          );
+          if (mounted) context.read<PdfEditProvider>().reset();
         },
       ),
       PdfTool(
@@ -931,15 +961,60 @@ class _RecentFileCard extends StatelessWidget {
     required this.isDark,
   }) : onDelete = null;
 
+  IconData _getFileIcon(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'zip':
+        return Icons.folder_zip_rounded;
+      case 'xlsx':
+      case 'xls':
+      case 'csv':
+        return Icons.table_chart_rounded;
+      case 'docx':
+      case 'doc':
+        return Icons.description_rounded;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+        return Icons.image_rounded;
+      default:
+        return Icons.picture_as_pdf_rounded;
+    }
+  }
+
+  Color _getFileColor(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'zip':
+        return Colors.amber[800]!;
+      case 'xlsx':
+      case 'xls':
+      case 'csv':
+        return Colors.green[700]!;
+      case 'docx':
+      case 'doc':
+        return Colors.blue[800]!;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+        return Colors.teal;
+      default:
+        return Colors.redAccent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final file = File(path);
     String displayName = displayFileName(path);
+    final extStr = displayName.contains('.')
+        ? displayName.split('.').last.toLowerCase()
+        : p.extension(path).replaceAll('.', '').toLowerCase();
+    final fileIcon = _getFileIcon(extStr);
+    final fileColor = _getFileColor(extStr);
 
     return FutureBuilder<FileStat>(
       future: file.stat(),
       builder: (context, snapshot) {
-        String metadataText = "PDF Document";
+        String metadataText = "${extStr.toUpperCase()} Document";
         
         if (snapshot.hasData && snapshot.data!.type != FileSystemEntityType.notFound) {
           final stat = snapshot.data!;
@@ -948,12 +1023,9 @@ class _RecentFileCard extends StatelessWidget {
           final sizeMb = (stat.size / (1024 * 1024)).toStringAsFixed(1);
           final sizeText = stat.size > (1024 * 1024) ? "$sizeMb MB" : "$sizeKb KB";
           
-          final ext = displayName.contains('.') 
-              ? displayName.split('.').last.toUpperCase() 
-              : "PDF";
-          metadataText = "$ext • $sizeText • $date";
+          metadataText = "${extStr.toUpperCase()} • $sizeText • $date";
         } else if (snapshot.connectionState == ConnectionState.done) {
-          metadataText = "PDF Document • Saved locally";
+          metadataText = "${extStr.toUpperCase()} Document • Saved locally";
         }
 
         return Container(
@@ -980,12 +1052,12 @@ class _RecentFileCard extends StatelessWidget {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withAlpha(20),
+                  color: fileColor.withAlpha(20),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  p.extension(path).toLowerCase() == '.pdf' ? Icons.picture_as_pdf_rounded : Icons.insert_drive_file_rounded,
-                  color: Colors.redAccent,
+                  fileIcon,
+                  color: fileColor,
                 ),
               ),
               title: Text(

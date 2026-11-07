@@ -1,4 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -73,17 +72,20 @@ class SettingsScreen extends StatelessWidget {
               ),
               title: const Text("Language"),
               subtitle: const Text("English"),
-              trailing: DropdownButton<String>(
-                value: 'en',
-                underline: const SizedBox(),
-                items: const [
-                  DropdownMenuItem(value: 'en', child: Text("English")),
-                ],
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    context.setLocale(Locale(newValue));
-                  }
-                },
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "English",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.greenAccent,
+                  ),
+                ),
               ),
             ),
           ),

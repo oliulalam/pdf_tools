@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:pdfx/pdfx.dart' as pdfx;
 import 'package:share_plus/share_plus.dart';
 
 class PdfViewerScreen extends StatefulWidget {
@@ -18,11 +18,32 @@ class PdfViewerScreen extends StatefulWidget {
 }
 
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
-  final PdfViewerController _pdfViewerController = PdfViewerController();
+  pdfx.PdfControllerPinch? _pdfController;
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPdf();
+  }
+
+  void _initPdf() {
+    try {
+      if (File(widget.path).existsSync()) {
+        _pdfController = pdfx.PdfControllerPinch(
+          document: pdfx.PdfDocument.openFile(widget.path),
+        );
+      } else {
+        _isError = true;
+      }
+    } catch (e) {
+      _isError = true;
+    }
+  }
 
   @override
   void dispose() {
-    _pdfViewerController.dispose();
+    _pdfController?.dispose();
     super.dispose();
   }
 
@@ -34,7 +55,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.title, style: theme.appBarTheme.titleTextStyle),
+        title: Text(
+          widget.title,
+          style: theme.appBarTheme.titleTextStyle,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.share_rounded),
@@ -44,23 +68,17 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           ),
         ],
       ),
-      body: file.existsSync()
-          ? SfPdfViewer.file(
-              file,
-              controller: _pdfViewerController,
-              canShowScrollHead: false,
-              canShowScrollStatus: true,
-              onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to load PDF: ${details.error}')),
-                  );
-                }
-              },
+      body: (!file.existsSync() || _isError)
+          ? const Center(
+              child: Text("File not found or unreadable."),
             )
-          : const Center(
-              child: Text("File not found or deleted."),
-            ),
+          : (_pdfController != null
+              ? pdfx.PdfViewPinch(
+                  controller: _pdfController!,
+                )
+              : const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )),
     );
   }
 }
